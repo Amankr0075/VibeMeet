@@ -14,6 +14,8 @@ export interface SendPasswordResetEmailOptions {
   name?: string;
 }
 
+const SITE_URL = 'https://vibemeetchat.vercel.app';
+
 const getLogoAttachment = () => {
   const logoPath = path.resolve(__dirname, '../../assets/vibemeet-email-logo.jpg');
   if (fs.existsSync(logoPath)) {
@@ -175,6 +177,7 @@ export const generateVerificationEmailHtml = (otp: string, name?: string): strin
 
       <!-- Footer -->
       <div class="footer-section">
+        <a href="${SITE_URL}" style="display: inline-block; margin-bottom: 16px; padding: 12px 28px; background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #fff; font-weight: 700; font-size: 14px; text-decoration: none; border-radius: 50px; letter-spacing: 0.5px;">🚀 Visit VibeMeet</a>
         <p style="margin: 0 0 10px 0;">
           Need assistance or having issues? Reach our team directly at 
           <a href="mailto:logiterax@gmail.com" style="color: #f472b6; font-weight: 600; text-decoration: none;">logiterax@gmail.com</a>
@@ -338,6 +341,7 @@ export const generatePasswordResetEmailHtml = (otp: string, name?: string): stri
 
       <!-- Footer -->
       <div class="footer-section">
+        <a href="${SITE_URL}" style="display: inline-block; margin-bottom: 16px; padding: 12px 28px; background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #fff; font-weight: 700; font-size: 14px; text-decoration: none; border-radius: 50px; letter-spacing: 0.5px;">🚀 Visit VibeMeet</a>
         <p style="margin: 0 0 10px 0;">
           Need assistance or suspect suspicious activity? Reach our team directly at 
           <a href="mailto:logiterax@gmail.com" style="color: #f472b6; font-weight: 600; text-decoration: none;">logiterax@gmail.com</a>

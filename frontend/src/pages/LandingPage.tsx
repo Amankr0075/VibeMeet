@@ -187,7 +187,7 @@ const LandingPage: React.FC = () => {
     }
   };
 
-  const shareUrl = typeof window !== 'undefined' ? window.location.origin : 'https://vibemeet.app';
+  const shareUrl = typeof window !== 'undefined' ? window.location.origin : 'https://vibemeetchat.vercel.app';
   const shareText = `🎯 VibeMeet — No Swipes. Just Connections.\n\nMeet real people face-to-face in spontaneous video conversations powered by AI. No filters, no swiping — just genuine vibes.\n\nJoin me on VibeMeet: ${shareUrl}`;
 
   const handleCopyLink = async () => {
