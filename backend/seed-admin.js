@@ -1,46 +1,61 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+require('dotenv').config({ path: '.env' });
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/vibemeet';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 async function seed() {
-  await mongoose.connect(MONGODB_URI);
-  console.log('Connected to MongoDB');
-  const usersCol = mongoose.connection.db.collection('users');
-
-  const bcrypt = require('bcryptjs');
-  
-  // Purge any default seed accounts
-  const deleted = await usersCol.deleteMany({ email: 'admin@vibemeet.com' });
-  if (deleted.deletedCount > 0) {
-    console.log(`Removed ${deleted.deletedCount} default seed account(s).`);
+  if (!MONGODB_URI) {
+    console.error('ERROR: MONGODB_URI not found in .env');
+    process.exit(1);
   }
+
+  await mongoose.connect(MONGODB_URI);
+  console.log('Connected to MongoDB Atlas');
+
+  const usersCol = mongoose.connection.db.collection('users');
 
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash('Aman@62478140', salt);
 
-  // Ensure authorized administrator role
-  const updateResult = await usersCol.updateOne(
+  // Upsert the admin account with all required fields for login to work
+  const result = await usersCol.updateOne(
     { email: 'logiterax@gmail.com' },
-    { 
-      $set: { 
-        role: 'ADMIN',
+    {
+      $set: {
+        name: 'Admin',
+        email: 'logiterax@gmail.com',
         passwordHash: hashedPassword,
-        name: 'Admin'
-      } 
+        role: 'ADMIN',
+        accountStatus: 'ACTIVE',   // required by emailSignIn check
+        isVerified: true,
+        loginAttempts: 0,          // reset any lockout
+        lockoutUntil: null,
+        loginOtpHash: null,
+        loginOtpExpiresAt: null
+      }
     },
     { upsert: true }
   );
-  
-  if (updateResult.upsertedCount > 0) {
-    console.log('Created logiterax@gmail.com as ADMIN.');
-  } else if (updateResult.modifiedCount > 0) {
-    console.log('Updated logiterax@gmail.com to ADMIN role and updated password.');
+
+  if (result.upsertedCount > 0) {
+    console.log('✅ Created new admin account: logiterax@gmail.com');
+  } else if (result.modifiedCount > 0) {
+    console.log('✅ Updated existing admin account: logiterax@gmail.com');
+  } else {
+    console.log('ℹ️  Admin account already up to date.');
   }
 
-  const allAdmins = await usersCol.find({ role: 'ADMIN' }, { projection: { email: 1, role: 1, _id: 0 } }).toArray();
-  console.log('Active Administrator Accounts:', allAdmins.map(a => a.email));
+  // Print what is actually stored
+  const admin = await usersCol.findOne(
+    { email: 'logiterax@gmail.com' },
+    { projection: { email: 1, role: 1, accountStatus: 1, isVerified: 1, loginAttempts: 1, lockoutUntil: 1, _id: 0 } }
+  );
+  console.log('\nAdmin record in Atlas:');
+  console.log(JSON.stringify(admin, null, 2));
 
   await mongoose.disconnect();
+  console.log('\nDone!');
 }
 
 seed().catch(err => {
