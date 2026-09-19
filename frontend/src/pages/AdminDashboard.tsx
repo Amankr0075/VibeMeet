@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { 
+import {
   Users, Video, AlertTriangle, Shield, Activity, Search, LogOut,
   RefreshCw, CheckCircle, ArrowUpRight,
   PhoneCall, Sparkles, Trash2, Mail, Reply, Send,
