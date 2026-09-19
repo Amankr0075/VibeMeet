@@ -236,7 +236,17 @@ const MatchPage: React.FC = () => {
         peerRef.current.destroy();
       }
 
-      const newPeer = new Peer({ initiator: true, trickle: false, stream: currentStream });
+      const newPeer = new Peer({ 
+        initiator: true, 
+        trickle: false, 
+        stream: currentStream,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+          ]
+        }
+      });
       newPeer.on('signal', (s: SignalData) => socket.emit('call-offer', { offer: s, roomId: data.roomId }));
       newPeer.on('stream', (rStream: MediaStream) => {
         setRemoteStream(rStream);
@@ -254,7 +264,17 @@ const MatchPage: React.FC = () => {
         peerRef.current.destroy();
       }
 
-      const newPeer = new Peer({ initiator: false, trickle: false, stream: currentStream });
+      const newPeer = new Peer({ 
+        initiator: false, 
+        trickle: false, 
+        stream: currentStream,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+          ]
+        }
+      });
       newPeer.on('signal', (s: SignalData) => socket.emit('call-answer', { answer: s, roomId: data.roomId }));
       newPeer.on('stream', (rStream: MediaStream) => {
         setRemoteStream(rStream);

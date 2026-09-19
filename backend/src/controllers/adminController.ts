@@ -47,7 +47,7 @@ export const listMembers = async (req: Request, res: Response): Promise<void> =>
   const limit = parseInt(String(req.query.limit)) || 20;
   const { skip, limit: lim } = getPagination(page, limit);
   const [members, total] = await Promise.all([
-    User.find({}).skip(skip).limit(lim).select('-passwordHash'),
+    User.find({}).sort({ createdAt: -1 }).skip(skip).limit(lim).select('-passwordHash'),
     User.countDocuments({}),
   ]);
   res.json({ members, total, page, limit: lim });
