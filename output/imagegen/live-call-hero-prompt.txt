@@ -1,0 +1,8 @@
+Use case: photorealistic-natural
+Asset type: premium dating app landing page hero
+Primary request: an original polished horizontal live video-call visual with one young adult woman in a phone panel on the left and one young adult man in a phone panel on the right, clearly enjoying the same active video call.
+Scene/backdrop: sophisticated deep navy and plum backdrop, two elegant rounded smartphone video panels, a subtle glowing connection line and heart pulse between them.
+Style/medium: high-end editorial photography integrated into premium modern UI.
+Composition/framing: landscape 3:2, large fully visible faces, generous dark negative space, natural warm smiles.
+Lighting/mood: soft warm face lighting with pink and blue rim light.
+Constraints: exactly one woman and one man; no text; no logos; no watermarks; no extra people; no collage poster; no distorted hands.
