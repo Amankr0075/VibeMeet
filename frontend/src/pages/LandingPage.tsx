@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { motion, useInView } from "framer-motion";
 import { 
   Video, Heart, Shield, Sparkles, Zap, Star, Users, ChevronRight, ArrowRight, 
-  BadgeCheck, PhoneCall, Radio, Megaphone, Share2, Copy, Check, X
+  BadgeCheck, PhoneCall, Radio, Megaphone, Share2, Copy, Check, X, Menu
 } from "lucide-react";
 import { Logo3D } from "../components/Logo3D";
 import { InfoModal, type InfoModalTab } from "../components/InfoModal";
@@ -126,6 +126,7 @@ const LandingPage: React.FC = () => {
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [activeInfoTab, setActiveInfoTab] = useState<InfoModalTab>('about');
   const [showShare, setShowShare] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [liveContent, setLiveContent] = useState<LiveContent>({
     announcement: 'New connections are happening now — your next great conversation could start today.',
@@ -282,8 +283,33 @@ const LandingPage: React.FC = () => {
               </Link>
             </>
           )}
+
+          {/* Mobile Menu Toggle */}
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="lg:hidden p-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+          >
+            {isMobileMenuOpen ? <X className="w-5 h-5 text-slate-300" /> : <Menu className="w-5 h-5 text-slate-300" />}
+          </button>
         </div>
       </motion.nav>
+
+      {/* Mobile Menu Dropdown */}
+      {isMobileMenuOpen && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className="lg:hidden absolute top-20 left-4 right-4 z-40 bg-[#0f172a]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 flex flex-col gap-4"
+        >
+          <button onClick={() => { scrollTo('how-it-works'); setIsMobileMenuOpen(false); }} className="text-left px-4 py-2 hover:bg-white/5 rounded-lg text-slate-200">How it works</button>
+          <button onClick={() => { openInfoModal('about'); setIsMobileMenuOpen(false); }} className="text-left px-4 py-2 hover:bg-white/5 rounded-lg text-slate-200">About</button>
+          <button onClick={() => { openInfoModal('safety'); setIsMobileMenuOpen(false); }} className="text-left px-4 py-2 hover:bg-white/5 rounded-lg text-slate-200">Safety</button>
+          <button onClick={() => { openInfoModal('guidelines'); setIsMobileMenuOpen(false); }} className="text-left px-4 py-2 hover:bg-white/5 rounded-lg text-slate-200">Guidelines</button>
+          <button onClick={() => { openInfoModal('terms'); setIsMobileMenuOpen(false); }} className="text-left px-4 py-2 hover:bg-white/5 rounded-lg text-slate-200">Terms</button>
+          <button onClick={() => { openInfoModal('privacy'); setIsMobileMenuOpen(false); }} className="text-left px-4 py-2 hover:bg-white/5 rounded-lg text-slate-200">Privacy</button>
+          <button onClick={() => { openInfoModal('contact'); setIsMobileMenuOpen(false); }} className="text-left px-4 py-2 hover:bg-white/5 rounded-lg text-slate-200">Contact</button>
+        </motion.div>
+      )}
 
       {/* Hero */}
       <main className="relative z-10 container mx-auto px-6 pt-16 pb-24 flex flex-col items-center text-center">
