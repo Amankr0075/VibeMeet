@@ -1306,7 +1306,7 @@ const AdminDashboard: React.FC = () => {
 
                     <div className="space-y-3">
                       {[
-                        { icon: Database, label: 'MongoDB Database', sub: 'localhost:27017/vibemeet', status: 'CONNECTED', color: '#10b981' },
+                        { icon: Database, label: 'MongoDB Database', sub: 'MongoDB Atlas Cluster (Production)', status: 'CONNECTED', color: '#10b981' },
                         { icon: Wifi, label: 'WebRTC Signaling', sub: 'Socket.IO Real-time Engine', status: 'ONLINE', color: '#10b981' },
                         { icon: Bot, label: 'AI Content Moderation', sub: 'Groq LLaMA 3.3 Safety Filter', status: 'ACTIVE', color: '#10b981' },
                         { icon: Mail, label: 'SMTP Email Dispatch', sub: 'smtp.gmail.com · logiterax@gmail.com', status: 'CONFIGURED', color: '#10b981' },
