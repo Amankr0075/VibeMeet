@@ -3,9 +3,9 @@ import { io, type Socket } from 'socket.io-client';
 import Peer, { type SignalData } from 'simple-peer';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-  Video, VideoOff, Mic, MicOff, MessageCircle, PhoneOff, AlertTriangle, 
-  LogOut, User as UserIcon, HelpCircle, Sparkles, Shield, Heart, 
+import {
+  Video, VideoOff, Mic, MicOff, MessageCircle, PhoneOff, AlertTriangle,
+  LogOut, User as UserIcon, HelpCircle, Sparkles, Shield, Heart,
   X, Check, Mail, Send, Copy, CheckCheck, Radio, ChevronRight, LayoutDashboard
 } from 'lucide-react';
 import { Logo3D } from '../components/Logo3D';
@@ -45,19 +45,19 @@ const LiveAtmosphere: React.FC = () => {
 
       {/* Floating Particles */}
       {particles.map((p) => (
-        <div 
-          key={p.id} 
-          className="particle" 
-          style={{ 
-            left: p.left, 
-            top: p.top, 
-            width: `${p.size}px`, 
-            height: `${p.size}px`, 
-            background: p.color, 
+        <div
+          key={p.id}
+          className="particle"
+          style={{
+            left: p.left,
+            top: p.top,
+            width: `${p.size}px`,
+            height: `${p.size}px`,
+            background: p.color,
             boxShadow: `0 0 ${p.size * 3}px ${p.color}`,
-            animationDuration: p.duration, 
-            animationDelay: p.delay 
-          }} 
+            animationDuration: p.duration,
+            animationDelay: p.delay
+          }}
         />
       ))}
     </div>
@@ -236,9 +236,9 @@ const MatchPage: React.FC = () => {
         peerRef.current.destroy();
       }
 
-      const newPeer = new Peer({ 
-        initiator: true, 
-        trickle: false, 
+      const newPeer = new Peer({
+        initiator: true,
+        trickle: false,
         stream: currentStream,
         config: {
           iceServers: [
@@ -264,9 +264,9 @@ const MatchPage: React.FC = () => {
         peerRef.current.destroy();
       }
 
-      const newPeer = new Peer({ 
-        initiator: false, 
-        trickle: false, 
+      const newPeer = new Peer({
+        initiator: false,
+        trickle: false,
         stream: currentStream,
         config: {
           iceServers: [
@@ -472,13 +472,13 @@ const MatchPage: React.FC = () => {
 
   return (
     <div className="h-screen w-full bg-[#070b14] text-white flex flex-col relative overflow-hidden font-sans select-none">
-      
+
       {/* Live Atmospheric Background with Fluid Auroras & Particle Effects */}
       <LiveAtmosphere />
 
       {/* Top Professional Header Bar */}
       <header className="relative z-30 w-full px-6 py-4 flex items-center justify-between border-b border-white/10 bg-slate-950/70 backdrop-blur-2xl shadow-lg">
-        
+
         {/* Brand & Connection State */}
         <div className="flex items-center gap-4">
           <Link to="/" className="flex items-center gap-3 group">
@@ -502,12 +502,12 @@ const MatchPage: React.FC = () => {
 
         {/* Action Controls: Notifications, Help Center, Profile, Logout */}
         <div className="flex items-center gap-2.5 sm:gap-3">
-          
+
           {/* Notifications Bell */}
           <NotificationBell socket={socket} />
 
           {/* Help Center Button */}
-          <button 
+          <button
             id="help-center-btn"
             onClick={() => { setIsHelpModalOpen(true); }}
             className="p-2.5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-white/10 shadow-sm"
@@ -517,10 +517,10 @@ const MatchPage: React.FC = () => {
           </button>
 
           {/* Profile Button */}
-          <button 
+          <button
             id="profile-btn"
-            onClick={() => { 
-              setIsProfileModalOpen(true); 
+            onClick={() => {
+              setIsProfileModalOpen(true);
               setIsHelpModalOpen(false);
               setEditUsername(user?.username || '');
               setEditBio(user?.bio || '');
@@ -554,7 +554,7 @@ const MatchPage: React.FC = () => {
           )}
 
           {/* Logout Button */}
-          <button 
+          <button
             id="logout-btn"
             onClick={handleLogout}
             className="p-2.5 rounded-full bg-slate-800/80 hover:bg-red-500/20 text-slate-300 hover:text-red-400 transition-all border border-white/10 shadow-sm"
@@ -567,25 +567,25 @@ const MatchPage: React.FC = () => {
 
       {/* Main Interactive Stage */}
       <main className="flex-1 relative flex items-center justify-center overflow-hidden z-10">
-        
+
         {/* Remote Video Surface */}
         <div className="absolute inset-0 bg-transparent flex items-center justify-center">
           {status === 'IN_CALL' && remoteStream ? (
             <video ref={userVideo} autoPlay playsInline className="w-full h-full object-cover" />
           ) : (
             <div className="flex flex-col items-center justify-center text-center p-6 max-w-3xl">
-              
+
               {/* QUEUED STATE: Sonar Radar Animation */}
               {status === 'QUEUED' && (
                 <div className="flex flex-col items-center animate-in fade-in zoom-in-95 duration-300">
-                  
+
                   {/* Radar Ripple Container */}
                   <div className="relative w-64 h-64 flex items-center justify-center mb-8">
                     {/* Concentric expanding ripples */}
                     <div className="absolute inset-0 rounded-full border border-pink-500/40 radar-ripple-1" />
                     <div className="absolute inset-0 rounded-full border border-purple-500/30 radar-ripple-2" />
                     <div className="absolute inset-0 rounded-full border border-blue-500/20 radar-ripple-3" />
-                    
+
                     {/* Rotating scanning beam */}
                     <div className="absolute inset-6 rounded-full overflow-hidden opacity-40">
                       <div className="w-full h-full radar-sweep rounded-full [background:conic-gradient(from_0deg,transparent_0_300deg,rgba(236,72,153,0.7)_360deg)]" />
@@ -605,9 +605,9 @@ const MatchPage: React.FC = () => {
                   <p className="text-slate-400 text-sm mt-2 mb-8 max-w-md">
                     Looking for someone matching your preference: <span className="text-pink-400 font-bold">{user?.preferredGender || 'Everyone'}</span>{user?.preferredCommunity === 'COLLEGE_STUDENTS' ? <>, from <span className="text-pink-400 font-bold">{user.institutionName}</span></> : null}.
                   </p>
-                  
-                  <button 
-                    onClick={leaveQueue} 
+
+                  <button
+                    onClick={leaveQueue}
                     className="px-8 py-3 rounded-full text-sm font-semibold bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white border border-white/15 transition-all shadow-lg hover:scale-105 active:scale-95"
                   >
                     Cancel Search
@@ -618,7 +618,7 @@ const MatchPage: React.FC = () => {
               {/* IDLE STATE: Attractive Homepage Hero with Live Effects */}
               {status === 'IDLE' && (
                 <div className="flex flex-col items-center animate-in fade-in zoom-in-95 duration-500">
-                  
+
                   {/* Glowing 3D Logo Header */}
                   <div className="relative mb-6">
                     <div className="pulse-glow absolute -inset-8 bg-gradient-to-r from-pink-500/30 via-purple-600/30 to-blue-500/30 rounded-full blur-3xl" />
@@ -634,7 +634,7 @@ const MatchPage: React.FC = () => {
                   <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight mb-4">
                     Ready to meet <span className="gradient-text">face to face?</span>
                   </h1>
-                  
+
                   <p className="text-slate-400 text-base sm:text-lg max-w-xl mb-8 leading-relaxed">
                     Real-time spontaneous 1-on-1 video conversations. No endless chats, no fake profiles — jump straight into genuine conversations.
                   </p>
@@ -642,9 +642,9 @@ const MatchPage: React.FC = () => {
                   {/* Primary Start Video Match CTA */}
                   <div className="relative group mb-8">
                     <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 opacity-70 blur-xl group-hover:opacity-100 transition duration-500 group-hover:duration-200 animate-pulse" />
-                    <button 
+                    <button
                       id="start-match-btn"
-                      onClick={joinQueue} 
+                      onClick={joinQueue}
                       className="relative inline-flex items-center gap-3 px-11 py-5 rounded-full font-black text-lg text-white bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 shadow-[0_0_35px_rgba(236,72,153,0.4)] hover:shadow-[0_0_55px_rgba(236,72,153,0.7)] hover:scale-105 active:scale-95 transition-all duration-300"
                     >
                       <Video className="w-6 h-6 group-hover:rotate-12 transition-transform" />
@@ -699,12 +699,12 @@ const MatchPage: React.FC = () => {
         {/* Floating Local Video Picture-in-Picture */}
         {stream && (
           <div className="absolute top-6 right-6 w-36 sm:w-52 aspect-[3/4] bg-slate-900/90 rounded-2xl overflow-hidden z-20 border-2 border-white/20 shadow-2xl backdrop-blur-md">
-            <video 
-              ref={myVideo} 
-              autoPlay 
-              playsInline 
-              muted 
-              className={`w-full h-full object-cover transform scale-x-[-1] ${!isVideoOn ? 'opacity-0' : 'opacity-100'}`} 
+            <video
+              ref={myVideo}
+              autoPlay
+              playsInline
+              muted
+              className={`w-full h-full object-cover transform scale-x-[-1] ${!isVideoOn ? 'opacity-0' : 'opacity-100'}`}
             />
             {!isVideoOn && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-400 text-xs">
@@ -738,7 +738,7 @@ const MatchPage: React.FC = () => {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
               {messages.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-slate-500 text-xs text-center p-4">
@@ -747,8 +747,8 @@ const MatchPage: React.FC = () => {
                 </div>
               ) : (
                 messages.map((m, i) => (
-                  <div 
-                    key={i} 
+                  <div
+                    key={i}
                     className={`p-3 rounded-2xl max-w-[85%] text-xs leading-relaxed ${m.senderId === user?._id ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white self-end rounded-br-none' : 'bg-slate-800 text-slate-200 self-start rounded-bl-none border border-white/10'}`}
                   >
                     {m.message}
@@ -758,12 +758,12 @@ const MatchPage: React.FC = () => {
             </div>
 
             <form onSubmit={sendMessage} className="p-3 bg-slate-950/60 border-t border-white/10 flex gap-2">
-              <input 
-                type="text" 
-                value={currentMessage} 
-                onChange={(e) => setCurrentMessage(e.target.value)} 
-                placeholder="Send a positive message..." 
-                className="flex-1 bg-slate-800/90 border border-white/10 rounded-full px-4 py-2 text-xs focus:outline-none focus:border-pink-500" 
+              <input
+                type="text"
+                value={currentMessage}
+                onChange={(e) => setCurrentMessage(e.target.value)}
+                placeholder="Send a positive message..."
+                className="flex-1 bg-slate-800/90 border border-white/10 rounded-full px-4 py-2 text-xs focus:outline-none focus:border-pink-500"
               />
               <button type="submit" className="bg-gradient-to-r from-pink-500 to-purple-600 p-2 rounded-full hover:scale-105 transition-all">
                 <Send className="w-4 h-4" />
@@ -778,10 +778,10 @@ const MatchPage: React.FC = () => {
       {status === 'IN_CALL' && (
         <div className="relative z-30 w-full p-5 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent flex items-center justify-center">
           <div className="flex items-center gap-4 bg-slate-900/80 border border-white/15 px-6 py-3 rounded-full backdrop-blur-2xl shadow-2xl">
-            
+
             {/* Audio Toggle */}
-            <button 
-              onClick={toggleAudio} 
+            <button
+              onClick={toggleAudio}
               className={`p-3.5 rounded-full transition-all ${isAudioOn ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-red-500 text-white shadow-lg shadow-red-500/30'}`}
               title={isAudioOn ? 'Mute Mic' : 'Unmute Mic'}
             >
@@ -789,8 +789,8 @@ const MatchPage: React.FC = () => {
             </button>
 
             {/* Video Toggle */}
-            <button 
-              onClick={toggleVideo} 
+            <button
+              onClick={toggleVideo}
               className={`p-3.5 rounded-full transition-all ${isVideoOn ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-red-500 text-white shadow-lg shadow-red-500/30'}`}
               title={isVideoOn ? 'Turn Off Camera' : 'Turn On Camera'}
             >
@@ -798,8 +798,8 @@ const MatchPage: React.FC = () => {
             </button>
 
             {/* Chat Drawer Toggle */}
-            <button 
-              onClick={() => setIsChatOpen(!isChatOpen)} 
+            <button
+              onClick={() => setIsChatOpen(!isChatOpen)}
               className={`p-3.5 rounded-full transition-all ${isChatOpen ? 'bg-pink-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-white'}`}
               title="Toggle Live Chat"
             >
@@ -807,8 +807,8 @@ const MatchPage: React.FC = () => {
             </button>
 
             {/* End Call Hangup */}
-            <button 
-              onClick={endCall} 
+            <button
+              onClick={endCall}
               className="p-3.5 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-xl shadow-red-600/40 hover:scale-105 active:scale-95 transition-all"
               title="End Call"
             >
@@ -816,8 +816,8 @@ const MatchPage: React.FC = () => {
             </button>
 
             {/* Skip / Next Person */}
-            <button 
-              onClick={nextPerson} 
+            <button
+              onClick={nextPerson}
               className="px-6 py-3 rounded-full font-bold text-sm bg-white hover:bg-slate-200 text-slate-950 shadow-lg transition-all hover:scale-105 active:scale-95"
             >
               Next Person →
@@ -831,7 +831,7 @@ const MatchPage: React.FC = () => {
       {isProfileModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
           <div className="relative w-full max-w-lg bg-slate-900 border border-white/15 rounded-[2.5rem] p-6 sm:p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
-            
+
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-6">
               <div className="flex items-center gap-3">
@@ -843,7 +843,7 @@ const MatchPage: React.FC = () => {
                   <p className="text-xs text-slate-400">Update your avatar (DP), bio, and matching vibe.</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsProfileModalOpen(false)}
                 className="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
               >
@@ -860,30 +860,30 @@ const MatchPage: React.FC = () => {
             )}
 
             <form onSubmit={handleSaveProfile} className="space-y-5">
-              
+
               {/* DP / Avatar Section */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Profile Picture (DP)</label>
                 <div className="flex items-center gap-4">
-                  <img 
-                    src={editProfileImage || AVATAR_PRESETS[0]} 
-                    alt="Avatar preview" 
+                  <img
+                    src={editProfileImage || AVATAR_PRESETS[0]}
+                    alt="Avatar preview"
                     className="w-16 h-16 rounded-full object-cover ring-2 ring-pink-500 shadow-lg shadow-pink-500/20"
                   />
                   <div className="flex-1">
-                    <input 
-                      type="url" 
-                      value={editProfileImage} 
-                      onChange={(e) => setEditProfileImage(e.target.value)} 
-                      placeholder="Paste image URL or choose preset below" 
+                    <input
+                      type="url"
+                      value={editProfileImage}
+                      onChange={(e) => setEditProfileImage(e.target.value)}
+                      placeholder="Paste image URL or choose preset below"
                       className="w-full bg-slate-800 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-pink-500"
                     />
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-[10px] text-slate-400 font-medium">Presets:</span>
                       {AVATAR_PRESETS.map((p, idx) => (
-                        <button 
-                          type="button" 
-                          key={idx} 
+                        <button
+                          type="button"
+                          key={idx}
                           onClick={() => setEditProfileImage(p)}
                           className="w-7 h-7 rounded-full overflow-hidden border border-white/20 hover:scale-110 transition-transform"
                         >
@@ -898,10 +898,10 @@ const MatchPage: React.FC = () => {
               {/* Username */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Username</label>
-                <input 
-                  type="text" 
-                  value={editUsername} 
-                  onChange={(e) => setEditUsername(e.target.value)} 
+                <input
+                  type="text"
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value)}
                   placeholder="@username"
                   required
                   className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500"
@@ -911,10 +911,10 @@ const MatchPage: React.FC = () => {
               {/* Bio */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Bio / Vibe Description</label>
-                <textarea 
-                  value={editBio} 
-                  onChange={(e) => setEditBio(e.target.value)} 
-                  rows={3} 
+                <textarea
+                  value={editBio}
+                  onChange={(e) => setEditBio(e.target.value)}
+                  rows={3}
                   placeholder="Share your vibe, favorite artists, humor, or what you're looking for..."
                   className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 resize-none"
                 />
@@ -924,8 +924,8 @@ const MatchPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Your Gender</label>
-                  <select 
-                    value={editGender} 
+                  <select
+                    value={editGender}
                     onChange={(e) => setEditGender(e.target.value as any)}
                     className="w-full bg-slate-800 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500"
                   >
@@ -938,8 +938,8 @@ const MatchPage: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Match Preference</label>
-                  <select 
-                    value={editPreferredGender} 
+                  <select
+                    value={editPreferredGender}
                     onChange={(e) => setEditPreferredGender(e.target.value as any)}
                     className="w-full bg-slate-800 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500"
                   >
@@ -994,8 +994,8 @@ const MatchPage: React.FC = () => {
 
               {/* Save Button */}
               <div className="pt-2">
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={profileSaving}
                   className="w-full py-3.5 rounded-xl font-bold text-sm bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 text-white hover:opacity-95 shadow-lg shadow-pink-500/30 disabled:opacity-50 transition-all"
                 >
@@ -1022,7 +1022,7 @@ const MatchPage: React.FC = () => {
                   <p className="text-xs text-slate-400">Direct support and community assistance.</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsHelpModalOpen(false)}
                 className="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
               >
@@ -1031,7 +1031,7 @@ const MatchPage: React.FC = () => {
             </div>
 
             <div className="space-y-4 text-xs text-slate-300">
-              
+
               {/* Direct Support Card */}
               <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-start gap-3">
                 <Mail className="w-5 h-5 text-pink-400 shrink-0 mt-0.5" />
@@ -1040,8 +1040,8 @@ const MatchPage: React.FC = () => {
                   <p className="text-slate-400 mt-1 leading-relaxed">Reach our admin and support team directly:</p>
                   <div className="flex items-center gap-2 mt-2">
                     <span className="font-mono font-bold text-pink-400 text-sm">logiterax@gmail.com</span>
-                    <button 
-                      onClick={copySupportEmail} 
+                    <button
+                      onClick={copySupportEmail}
                       className="p-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white transition-colors"
                       title="Copy email"
                     >
@@ -1064,7 +1064,7 @@ const MatchPage: React.FC = () => {
               </div>
 
               {/* Action Email Button */}
-              <a 
+              <a
                 href="mailto:logiterax@gmail.com?subject=VibeMeet%20Support%20Request"
                 className="block text-center w-full py-3.5 rounded-xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:opacity-95 shadow-md shadow-pink-500/25 transition-all"
               >
