@@ -21,6 +21,19 @@ const AVATAR_PRESETS = [
   'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80'
 ];
 
+// Development fallback for users on networks that cannot establish a direct
+// peer route. Production deployments should override this with private,
+// time-limited TURN credentials via the VITE_TURN_* variables below.
+const fallbackTurnServer: RTCIceServer = {
+  urls: [
+    'turn:openrelay.metered.ca:80?transport=tcp',
+    'turn:openrelay.metered.ca:443?transport=tcp',
+    'turns:openrelay.metered.ca:443?transport=tcp'
+  ],
+  username: 'openrelayproject',
+  credential: 'openrelayproject'
+};
+
 const iceServers: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
@@ -30,7 +43,7 @@ const iceServers: RTCIceServer[] = [
         username: import.meta.env.VITE_TURN_USERNAME,
         credential: import.meta.env.VITE_TURN_CREDENTIAL
       }]
-    : [])
+    : [fallbackTurnServer])
 ];
 
 // Live Particle Background Component

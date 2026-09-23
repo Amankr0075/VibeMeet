@@ -9,7 +9,7 @@ import {
   Zap, ChevronRight, Database, Wifi, Bot, AtSign,
   UserSearch, Download, Link, Megaphone
 } from 'lucide-react';
-import { apiUrl } from '../config/api';
+import { apiFetch } from '../config/api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -167,7 +167,7 @@ const AdminDashboard: React.FC = () => {
     setInvestigationError(null);
     setInvestigationResult(null);
     try {
-      const res = await fetch(apiUrl(`/api/admin/user-profile?query=${encodeURIComponent(investigationQuery.trim())}`), {
+      const res = await apiFetch(`/api/admin/user-profile?query=${encodeURIComponent(investigationQuery.trim())}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -618,7 +618,7 @@ const AdminDashboard: React.FC = () => {
   }
 
   const fetchStats = async () => {
-    const res = await fetch(apiUrl('/api/admin/stats'), { headers: { 'Authorization': `Bearer ${token}` } });
+    const res = await apiFetch('/api/admin/stats', { headers: { 'Authorization': `Bearer ${token}` } });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Unable to load dashboard statistics.');
     setStats(data.stats);
@@ -632,7 +632,7 @@ const AdminDashboard: React.FC = () => {
 
     while (records.length < total) {
       const separator = path.includes('?') ? '&' : '?';
-      const res = await fetch(apiUrl(`${path}${separator}page=${page}&limit=250`), {
+      const res = await apiFetch(`${path}${separator}page=${page}&limit=250`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -665,7 +665,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const fetchLandingContent = async () => {
-    const res = await fetch(apiUrl('/api/admin/landing-content'));
+    const res = await apiFetch('/api/admin/landing-content');
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Unable to load landing page content.');
     setLandingContent(data.content);
@@ -692,7 +692,7 @@ const AdminDashboard: React.FC = () => {
     try {
       const isBanned = currentStatus === 'BANNED' || currentStatus === 'AI_BLOCKED';
       const endpoint = isBanned ? `/api/admin/unblock/${targetId}` : `/api/admin/block/${targetId}`;
-      const res = await fetch(apiUrl(endpoint), { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
+      const res = await apiFetch(endpoint, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
       if (res.ok) await Promise.all([fetchStats(), fetchMembers()]);
     } catch (err) { console.error(err); }
     finally { setActionLoading(null); }
@@ -702,7 +702,7 @@ const AdminDashboard: React.FC = () => {
     if (!window.confirm(`Permanently delete user "${email}"?\n\nThis will erase their account, profile, and all session history.`)) return;
     setActionLoading(targetId);
     try {
-      const res = await fetch(apiUrl(`/api/admin/users/${targetId}`), { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      const res = await apiFetch(`/api/admin/users/${targetId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
       const data = await res.json();
       if (res.ok) { await Promise.all([fetchStats(), fetchMembers()]); }
       else alert(data.error || 'Failed to delete user.');
@@ -713,7 +713,7 @@ const AdminDashboard: React.FC = () => {
   const handleDeleteCall = async (callId: string) => {
     if (!window.confirm('Permanently delete this call session record?')) return;
     try {
-      const res = await fetch(apiUrl(`/api/admin/calls/${callId}`), { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      const res = await apiFetch(`/api/admin/calls/${callId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
       if (res.ok) await Promise.all([fetchStats(), fetchCalls()]);
     } catch (err) { console.error(err); }
   };
@@ -721,7 +721,7 @@ const AdminDashboard: React.FC = () => {
   const handleDeleteIncident = async (incidentId: string) => {
     if (!window.confirm('Delete this incident record?')) return;
     try {
-      const res = await fetch(apiUrl(`/api/admin/incidents/${incidentId}`), { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      const res = await apiFetch(`/api/admin/incidents/${incidentId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
       if (res.ok) await Promise.all([fetchStats(), fetchIncidents()]);
     } catch (err) { console.error(err); }
   };
@@ -729,7 +729,7 @@ const AdminDashboard: React.FC = () => {
   const handleDeleteMessage = async (msgId: string) => {
     if (!window.confirm('Delete this support ticket?')) return;
     try {
-      const res = await fetch(apiUrl(`/api/admin/messages/${msgId}`), { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      const res = await apiFetch(`/api/admin/messages/${msgId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
       if (res.ok) await fetchMessages();
     } catch (err) { console.error(err); }
   };
@@ -740,7 +740,7 @@ const AdminDashboard: React.FC = () => {
     setEmailError(null);
     setEmailSuccess(null);
     try {
-      const res = await fetch(apiUrl('/api/admin/send-email'), {
+      const res = await apiFetch('/api/admin/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ to: composerTo.trim().toLowerCase(), subject: composerSubject.trim(), message: composerMessage.trim(), ticketId: composerTicketId || undefined })
@@ -779,7 +779,7 @@ const AdminDashboard: React.FC = () => {
     if (!landingContent) return;
     setPublishingContent(true); setContentSuccess(null);
     try {
-      const res = await fetch(apiUrl('/api/admin/landing-content'), { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(landingContent) });
+      const res = await apiFetch('/api/admin/landing-content', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(landingContent) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not publish landing content');
       setLandingContent(data.content); setContentSuccess('Published — the landing page updates for all visitors within 30 seconds.');
@@ -799,7 +799,7 @@ const AdminDashboard: React.FC = () => {
     setBroadcastSuccess(null);
     setBroadcastError(null);
     try {
-      const res = await fetch(apiUrl('/api/admin/broadcast'), {
+      const res = await apiFetch('/api/admin/broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ subject: broadcastSubject, message: broadcastMessage }),
