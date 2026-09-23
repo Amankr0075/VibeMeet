@@ -125,7 +125,11 @@ The app will be fully functional locally. The frontend talks to the backend via 
    - Sign in to Vercel with your GitHub account.
    - Import the `VibeMeet` repository.
    - Set the *Root Directory* to `frontend`.
-   - Add an environment variable `VITE_API_URL` pointing to your live backend URL (e.g., the Ngrok URL or a hosted backend).
+   - Add the following Production environment variables, using the current public HTTPS URL of the tunnel running on your laptop (without a trailing slash):
+     ```dotenv
+     VITE_API_URL=https://your-current-tunnel.ngrok-free.app
+     VITE_SOCKET_URL=https://your-current-tunnel.ngrok-free.app
+     ```
    - Deploy – Vercel will automatically build and serve the app.
 
 2. **Backend (Ngrok – quick local deployment)**
@@ -133,7 +137,7 @@ The app will be fully functional locally. The frontend talks to the backend via 
    # With the backend running on port 5000
    ngrok http 5000
    ```
-   - Copy the generated HTTPS URL and add it as `VITE_API_URL` in Vercel.
+   - Copy the generated HTTPS URL and add it as both `VITE_API_URL` and `VITE_SOCKET_URL` in Vercel, then redeploy. The tunnel URL changes each time a free ngrok tunnel is restarted, so update both Vercel variables whenever that happens.
    - For a production‑grade backend you can host it on Render, Railway, or any VPS.
 
 ---

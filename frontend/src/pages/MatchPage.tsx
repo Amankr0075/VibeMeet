@@ -112,12 +112,24 @@ const MatchPage: React.FC = () => {
   // Initialize Socket connection
   useEffect(() => {
     const socketUrl = getSocketUrl();
-    const newSocket = io(socketUrl, { auth: { token } });
+    const newSocket = io(socketUrl, {
+      auth: { token },
+      // Ngrok's free tunnel serves an HTML warning to HTTP polling requests.
+      // A direct WebSocket connection avoids that page and is also the right
+      // transport for a Vercel frontend talking to a laptop-hosted backend.
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: 5
+    });
     setSocket(newSocket);
 
     newSocket.on('online-count', (count: number) => setOnlineCount(count));
+    newSocket.on('connect_error', () => {
+      setMediaError('Unable to connect to the matching service. Check that the server is running and try again.');
+    });
 
     return () => {
+      newSocket.off('connect_error');
       newSocket.disconnect();
     };
   }, [token]);
@@ -355,8 +367,17 @@ const MatchPage: React.FC = () => {
 
   // Start Video Match: ONLY NOW open camera & mic
   const joinQueue = async () => {
+    // Do not show a fake searching state when Socket.IO is not connected. This
+    // is especially important when a second device accesses the app over LAN.
+    if (!socket?.connected) {
+      setMediaError('Connecting to the matching service. Please wait a moment and try again.');
+      socket?.connect();
+      return;
+    }
+
     const currentStream = await initMedia();
     if (!currentStream) return;
+    setMediaError(null);
     setStatus('QUEUED');
     socket?.emit('join-match-queue');
   };

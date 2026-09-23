@@ -37,6 +37,18 @@ const clientOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(',').map((origin) => origin.trim())
   : defaultOrigins;
 
+const isPrivateNetworkOrigin = (origin: string): boolean => {
+  try {
+    const { protocol, hostname } = new URL(origin);
+    if (protocol !== 'http:' && protocol !== 'https:') return false;
+    if (/^10\./.test(hostname) || /^192\.168\./.test(hostname)) return true;
+    const match = hostname.match(/^172\.(\d{1,2})\./);
+    return Boolean(match && Number(match[1]) >= 16 && Number(match[1]) <= 31);
+  } catch {
+    return false;
+  }
+};
+
 const isAllowedOrigin = (origin?: string) => {
   if (!origin) return true;
   if (
@@ -47,7 +59,11 @@ const isAllowedOrigin = (origin?: string) => {
     origin.endsWith('.vercel.app') ||
     origin.endsWith('.ngrok.io') ||
     origin.endsWith('.ngrok-free.app') ||
-    clientOrigins.includes(origin)
+    clientOrigins.includes(origin) ||
+    // Vite is configured with host: true for device testing. Permit other
+    // devices on the same private network while developing, but never open
+    // this exception in production.
+    (process.env.NODE_ENV !== 'production' && isPrivateNetworkOrigin(origin))
   ) {
     return true;
   }
