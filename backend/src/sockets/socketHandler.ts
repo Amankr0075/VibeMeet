@@ -45,6 +45,27 @@ export const getOnlineCount = (): number => onlineUsers.size;
 let ioInstance: Server | null = null;
 export const getIo = () => ioInstance;
 
+// Matching is a read-then-write operation. Without a lock, two users joining at
+// the same time can both search an empty queue and then both insert themselves,
+// leaving neither request to search again. Serialize admissions so the second
+// request always sees the first waiting user.
+let queueOperation: Promise<void> = Promise.resolve();
+
+const runQueueOperation = async <T>(operation: () => Promise<T>): Promise<T> => {
+  const previousOperation = queueOperation;
+  let release!: () => void;
+  queueOperation = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  await previousOperation;
+  try {
+    return await operation();
+  } finally {
+    release();
+  }
+};
+
 export const setupSockets = (io: Server) => {
   ioInstance = io;
   // Middleware to authenticate socket
@@ -80,58 +101,65 @@ export const setupSockets = (io: Server) => {
 
     socket.on('join-match-queue', async () => {
       try {
-        const user = socket.user;
-        
-        // Remove from existing queue if any
-        await MatchSession.findOneAndDelete({ user: userId });
-        
-        // Check if there is a compatible user
-        const queue = await MatchSession.find({ status: 'QUEUED' }).populate('user');
-        
-        let matchedSession = null;
-        for (const potential of queue) {
-          const pUser = potential.user as any;
-          // Compatibility logic
-          const userPrefersPotential = user.preferredGender === 'Everyone' || user.preferredGender === pUser.gender + 's' || (user.preferredGender === 'Men' && pUser.gender === 'Male') || (user.preferredGender === 'Women' && pUser.gender === 'Female');
-          const potentialPrefersUser = pUser.preferredGender === 'Everyone' || pUser.preferredGender === user.gender + 's' || (pUser.preferredGender === 'Men' && user.gender === 'Male') || (pUser.preferredGender === 'Women' && user.gender === 'Female');
-          const userCommunityMatch = !wantsSameCollegeMatch(user) || isSameCollegeStudent(user, pUser);
-          const potentialCommunityMatch = !wantsSameCollegeMatch(pUser) || isSameCollegeStudent(pUser, user);
-          
-          if (userPrefersPotential && potentialPrefersUser && userCommunityMatch && potentialCommunityMatch) {
-            matchedSession = potential;
-            break;
+        await runQueueOperation(async () => {
+          // Reload the profile so preference changes made without reconnecting
+          // are immediately used for matching.
+          const user = await User.findById(userId);
+          if (!user) return;
+
+          // Remove any old entry for this user before looking for a partner.
+          await MatchSession.findOneAndDelete({ user: userId });
+
+          const queue = await MatchSession.find({ status: 'QUEUED' }).populate('user');
+          let matchedSession: (typeof queue)[number] | null = null;
+
+          for (const potential of queue) {
+            const pUser = potential.user as any;
+            const waitingSocket = io.sockets.sockets.get(potential.socketId);
+
+            // A disconnect normally removes this record, but discard stale
+            // entries here too so they can never block a real user.
+            if (!pUser || !waitingSocket) {
+              await MatchSession.findByIdAndDelete(potential._id);
+              continue;
+            }
+
+            const userPrefersPotential = user.preferredGender === 'Everyone' || (user.preferredGender === 'Men' && pUser.gender === 'Male') || (user.preferredGender === 'Women' && pUser.gender === 'Female');
+            const potentialPrefersUser = pUser.preferredGender === 'Everyone' || (pUser.preferredGender === 'Men' && user.gender === 'Male') || (pUser.preferredGender === 'Women' && user.gender === 'Female');
+            const userCommunityMatch = !wantsSameCollegeMatch(user) || isSameCollegeStudent(user, pUser);
+            const potentialCommunityMatch = !wantsSameCollegeMatch(pUser) || isSameCollegeStudent(pUser, user);
+
+            if (userPrefersPotential && potentialPrefersUser && userCommunityMatch && potentialCommunityMatch) {
+              matchedSession = potential;
+              break;
+            }
           }
-        }
 
-        if (matchedSession) {
-          // Create match
-          await MatchSession.findByIdAndUpdate(matchedSession._id, { status: 'MATCHED' });
-          
-          const callSession = new CallSession({
-            userA: matchedSession.user._id,
-            userB: userId,
-            status: 'ACTIVE'
-          });
-          await callSession.save();
+          if (matchedSession) {
+            // Claim and remove the waiting record while the queue is locked.
+            // Removing it also avoids leaving permanent MATCHED rows behind.
+            await MatchSession.findByIdAndDelete(matchedSession._id);
 
-          // Notify both
-          const roomId = callSession._id.toString();
-          socket.join(roomId);
-          io.sockets.sockets.get(matchedSession.socketId)?.join(roomId);
+            const callSession = new CallSession({
+              userA: matchedSession.user._id,
+              userB: userId,
+              status: 'ACTIVE'
+            });
+            await callSession.save();
 
-          io.to(roomId).emit('match-found', { roomId, callSession });
-          
-          // Initiator will be the one who was waiting in the queue
-          io.to(matchedSession.socketId).emit('initiate-call', { roomId });
-        } else {
-          // Add to queue
-          const newSession = new MatchSession({
-            user: userId,
-            socketId: socket.id,
-            status: 'QUEUED'
-          });
-          await newSession.save();
-        }
+            // Notify both
+            const roomId = callSession._id.toString();
+            socket.join(roomId);
+            io.sockets.sockets.get(matchedSession.socketId)?.join(roomId);
+
+            io.to(roomId).emit('match-found', { roomId, callSession });
+
+            // Initiator will be the one who was waiting in the queue
+            io.to(matchedSession.socketId).emit('initiate-call', { roomId });
+          } else {
+            await MatchSession.create({ user: userId, socketId: socket.id, status: 'QUEUED' });
+          }
+        });
 
       } catch (err) {
         console.error('Match Queue Error:', err);
