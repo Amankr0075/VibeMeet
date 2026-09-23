@@ -10,18 +10,6 @@ interface AuthenticatedSocket extends Socket {
   user?: any;
 }
 
-const normalizedInstitution = (institutionName?: string): string =>
-  (institutionName || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
-
-const wantsSameCollegeMatch = (user: any): boolean =>
-  user.preferredCommunity === 'COLLEGE_STUDENTS';
-
-const isSameCollegeStudent = (user: any, potentialUser: any): boolean =>
-  user.isCollegeStudent === true &&
-  potentialUser.isCollegeStudent === true &&
-  Boolean(normalizedInstitution(user.institutionName)) &&
-  normalizedInstitution(user.institutionName) === normalizedInstitution(potentialUser.institutionName);
-
 // ── Online user tracking ──────────────────────────────────────────────────────
 // Map of userId → Set of socketIds (a user may have multiple tabs open)
 export const onlineUsers = new Map<string, Set<string>>();
@@ -102,8 +90,10 @@ export const setupSockets = (io: Server) => {
     socket.on('join-match-queue', async () => {
       try {
         await runQueueOperation(async () => {
-          // Reload the profile so preference changes made without reconnecting
-          // are immediately used for matching.
+          // Confirm the requester still exists before adding a live socket to
+          // the queue. The radar deliberately pairs with any other active
+          // radar participant; a second person's profile preferences must not
+          // make an otherwise available person invisible.
           const user = await User.findById(userId);
           if (!user) return;
 
@@ -124,15 +114,8 @@ export const setupSockets = (io: Server) => {
               continue;
             }
 
-            const userPrefersPotential = user.preferredGender === 'Everyone' || (user.preferredGender === 'Men' && pUser.gender === 'Male') || (user.preferredGender === 'Women' && pUser.gender === 'Female');
-            const potentialPrefersUser = pUser.preferredGender === 'Everyone' || (pUser.preferredGender === 'Men' && user.gender === 'Male') || (pUser.preferredGender === 'Women' && user.gender === 'Female');
-            const userCommunityMatch = !wantsSameCollegeMatch(user) || isSameCollegeStudent(user, pUser);
-            const potentialCommunityMatch = !wantsSameCollegeMatch(pUser) || isSameCollegeStudent(pUser, user);
-
-            if (userPrefersPotential && potentialPrefersUser && userCommunityMatch && potentialCommunityMatch) {
-              matchedSession = potential;
-              break;
-            }
+            matchedSession = potential;
+            break;
           }
 
           if (matchedSession) {

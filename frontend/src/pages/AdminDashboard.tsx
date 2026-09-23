@@ -121,6 +121,7 @@ const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const [stats, setStats] = useState<StatsData | null>(null);
@@ -617,58 +618,71 @@ const AdminDashboard: React.FC = () => {
   }
 
   const fetchStats = async () => {
-    try {
-      const res = await fetch(apiUrl('/api/admin/stats'), { headers: { 'Authorization': `Bearer ${token}` } });
+    const res = await fetch(apiUrl('/api/admin/stats'), { headers: { 'Authorization': `Bearer ${token}` } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Unable to load dashboard statistics.');
+    setStats(data.stats);
+    setRecentUsers(data.recentUsers || []);
+  };
+
+  const fetchAllRecords = async <T,>(path: string, field: string): Promise<T[]> => {
+    const records: T[] = [];
+    let page = 1;
+    let total = Infinity;
+
+    while (records.length < total) {
+      const separator = path.includes('?') ? '&' : '?';
+      const res = await fetch(apiUrl(`${path}${separator}page=${page}&limit=250`), {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const data = await res.json();
-      if (res.ok) { setStats(data.stats); setRecentUsers(data.recentUsers || []); }
-    } catch (err) { console.error('Failed to fetch admin stats:', err); }
+      if (!res.ok) throw new Error(data.error || `Unable to load ${field}.`);
+
+      const batch = Array.isArray(data[field]) ? data[field] as T[] : [];
+      records.push(...batch);
+      total = Number.isFinite(data.total) ? data.total : records.length;
+      if (batch.length === 0) break;
+      page += 1;
+    }
+
+    return records;
   };
 
   const fetchMembers = async () => {
-    try {
-      const res = await fetch(apiUrl('/api/admin/members?limit=100'), { headers: { 'Authorization': `Bearer ${token}` } });
-      const data = await res.json();
-      if (res.ok) setMembers(data.members || []);
-    } catch (err) { console.error('Failed to fetch members:', err); }
+    setMembers(await fetchAllRecords<MemberUser>('/api/admin/members', 'members'));
   };
 
   const fetchCalls = async () => {
-    try {
-      const res = await fetch(apiUrl('/api/admin/calls?limit=50'), { headers: { 'Authorization': `Bearer ${token}` } });
-      const data = await res.json();
-      if (res.ok) setCalls(data.sessions || []);
-    } catch (err) { console.error('Failed to fetch calls:', err); }
+    setCalls(await fetchAllRecords<CallSessionItem>('/api/admin/calls', 'sessions'));
   };
 
   const fetchIncidents = async () => {
-    try {
-      const res = await fetch(apiUrl('/api/admin/incidents'), { headers: { 'Authorization': `Bearer ${token}` } });
-      const data = await res.json();
-      if (res.ok) setIncidents(data.incidents || []);
-    } catch (err) { console.error('Failed to fetch incidents:', err); }
+    setIncidents(await fetchAllRecords<IncidentItem>('/api/admin/incidents', 'incidents'));
   };
 
   const fetchMessages = async () => {
-    try {
-      const res = await fetch(apiUrl('/api/admin/messages'), { headers: { 'Authorization': `Bearer ${token}` } });
-      const data = await res.json();
-      if (res.ok) setMessages(data.messages || []);
-    } catch (err) { console.error('Failed to fetch support messages:', err); }
+    setMessages(await fetchAllRecords<SupportMessageItem>('/api/admin/messages', 'messages'));
   };
 
   const fetchLandingContent = async () => {
-    try {
-      const res = await fetch(apiUrl('/api/admin/landing-content'));
-      const data = await res.json();
-      if (res.ok) setLandingContent(data.content);
-    } catch (err) { console.error('Failed to fetch landing content:', err); }
+    const res = await fetch(apiUrl('/api/admin/landing-content'));
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Unable to load landing page content.');
+    setLandingContent(data.content);
   };
 
   const loadAllData = async () => {
     setRefreshing(true);
-    await Promise.all([fetchStats(), fetchMembers(), fetchCalls(), fetchIncidents(), fetchMessages(), fetchLandingContent()]);
-    setLoading(false);
-    setRefreshing(false);
+    setLoadError(null);
+    try {
+      await Promise.all([fetchStats(), fetchMembers(), fetchCalls(), fetchIncidents(), fetchMessages(), fetchLandingContent()]);
+    } catch (err: any) {
+      console.error('Failed to load admin dashboard data:', err);
+      setLoadError(err.message || 'Unable to load dashboard data.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => { loadAllData(); }, [token]);
@@ -986,6 +1000,12 @@ const AdminDashboard: React.FC = () => {
 
         {/* Scrollable Content */}
         <main className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
+          {loadError && (
+            <div className="rounded-2xl px-4 py-3 text-sm text-red-200 bg-red-500/10 border border-red-500/30 flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 shrink-0 text-red-400" />
+              <span>{loadError}</span>
+            </div>
+          )}
           {loading ? (
             <div className="h-96 flex flex-col items-center justify-center gap-4">
               <div className="w-12 h-12 rounded-full border-4 border-purple-500/30 border-t-purple-500 animate-spin" />

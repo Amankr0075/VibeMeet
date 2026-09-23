@@ -11,8 +11,12 @@ import { getOnlineUserIds, getOnlineCount, getIo } from '../sockets/socketHandle
 
 // Helper to build pagination meta
 const getPagination = (page: number, limit: number) => {
-  const skip = (page - 1) * limit;
-  return { skip, limit };
+  const safePage = Math.max(1, page);
+  // Keep a single request bounded while allowing the dashboard to request a
+  // complete collection in pages.
+  const safeLimit = Math.min(Math.max(1, limit), 250);
+  const skip = (safePage - 1) * safeLimit;
+  return { skip, limit: safeLimit, page: safePage };
 };
 
 export const adminLogin = async (req: Request, res: Response): Promise<void> => {
@@ -45,12 +49,12 @@ export const adminLogin = async (req: Request, res: Response): Promise<void> => 
 export const listMembers = async (req: Request, res: Response): Promise<void> => {
   const page = parseInt(String(req.query.page)) || 1;
   const limit = parseInt(String(req.query.limit)) || 20;
-  const { skip, limit: lim } = getPagination(page, limit);
+  const { skip, limit: lim, page: safePage } = getPagination(page, limit);
   const [members, total] = await Promise.all([
     User.find({}).sort({ createdAt: -1 }).skip(skip).limit(lim).select('-passwordHash'),
     User.countDocuments({}),
   ]);
-  res.json({ members, total, page, limit: lim });
+  res.json({ members, total, page: safePage, limit: lim });
 };
 
 export const blockUser = async (req: Request, res: Response): Promise<void> => {
@@ -96,16 +100,17 @@ export const unblockUser = async (req: Request, res: Response): Promise<void> =>
 export const listCallSessions = async (req: Request, res: Response): Promise<void> => {
   const page = parseInt(String(req.query.page)) || 1;
   const limit = parseInt(String(req.query.limit)) || 20;
-  const { skip, limit: lim } = getPagination(page, limit);
+  const { skip, limit: lim, page: safePage } = getPagination(page, limit);
   const [sessions, total] = await Promise.all([
     CallSession.find({})
       .populate('userA', 'name email gender location')
       .populate('userB', 'name email gender location')
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(lim),
     CallSession.countDocuments({}),
   ]);
-  res.json({ sessions, total, page, limit: lim });
+  res.json({ sessions, total, page: safePage, limit: lim });
 };
 
 export const dumpAllData = async (req: Request, res: Response): Promise<void> => {
@@ -213,11 +218,18 @@ export const getUserProfile = async (req: Request, res: Response): Promise<void>
 
 export const listIncidents = async (req: Request, res: Response): Promise<void> => {
   try {
-    const incidents = await ModerationIncident.find({})
-      .sort({ createdAt: -1 })
-      .populate('userId', 'name email username')
-      .limit(50);
-    res.json({ incidents });
+    const page = parseInt(String(req.query.page)) || 1;
+    const limit = parseInt(String(req.query.limit)) || 50;
+    const { skip, limit: lim, page: safePage } = getPagination(page, limit);
+    const [incidents, total] = await Promise.all([
+      ModerationIncident.find({})
+        .sort({ createdAt: -1 })
+        .populate('userId', 'name email username')
+        .skip(skip)
+        .limit(lim),
+      ModerationIncident.countDocuments({})
+    ]);
+    res.json({ incidents, total, page: safePage, limit: lim });
   } catch (error) {
     console.error('List incidents error:', error);
     res.status(500).json({ error: 'Failed to fetch incidents' });
@@ -284,8 +296,14 @@ export const deleteIncident = async (req: Request, res: Response): Promise<void>
 
 export const listMessages = async (req: Request, res: Response): Promise<void> => {
   try {
-    const messages = await SupportMessage.find({}).sort({ createdAt: -1 }).limit(100);
-    res.json({ messages });
+    const page = parseInt(String(req.query.page)) || 1;
+    const limit = parseInt(String(req.query.limit)) || 50;
+    const { skip, limit: lim, page: safePage } = getPagination(page, limit);
+    const [messages, total] = await Promise.all([
+      SupportMessage.find({}).sort({ createdAt: -1 }).skip(skip).limit(lim),
+      SupportMessage.countDocuments({})
+    ]);
+    res.json({ messages, total, page: safePage, limit: lim });
   } catch (error) {
     console.error('List messages error:', error);
     res.status(500).json({ error: 'Failed to fetch support messages' });
