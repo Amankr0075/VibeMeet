@@ -81,6 +81,7 @@ const io = new Server(httpServer, {
       }
     },
     methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
     credentials: true
   }
 });
@@ -93,6 +94,7 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
     }
   },
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
   credentials: true
 }));
 app.use(express.json({ limit: '6mb' }));
