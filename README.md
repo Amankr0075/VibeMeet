@@ -130,6 +130,7 @@ The app will be fully functional locally. The frontend talks to the backend via 
      VITE_API_URL=https://your-current-tunnel.ngrok-free.app
      VITE_SOCKET_URL=https://your-current-tunnel.ngrok-free.app
      ```
+   - For dependable video calls between different Wi-Fi/mobile networks, also configure a TURN server and set `VITE_TURN_URL`, `VITE_TURN_USERNAME`, and `VITE_TURN_CREDENTIAL`. STUN alone cannot relay media when either network uses restrictive NAT or a firewall.
    - Deploy – Vercel will automatically build and serve the app.
 
 2. **Backend (Ngrok – quick local deployment)**

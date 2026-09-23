@@ -33,6 +33,16 @@ export const getOnlineCount = (): number => onlineUsers.size;
 let ioInstance: Server | null = null;
 export const getIo = () => ioInstance;
 
+interface PendingCallStart {
+  initiatorSocketId: string;
+  participantSocketIds: Set<string>;
+  readySocketIds: Set<string>;
+}
+
+// A call must not begin until both browser clients have joined its signaling
+// room and confirmed that their local camera stream is ready.
+const pendingCallStarts = new Map<string, PendingCallStart>();
+
 // Matching is a read-then-write operation. Without a lock, two users joining at
 // the same time can both search an empty queue and then both insert themselves,
 // leaving neither request to search again. Serialize admissions so the second
@@ -132,13 +142,20 @@ export const setupSockets = (io: Server) => {
 
             // Notify both
             const roomId = callSession._id.toString();
-            socket.join(roomId);
-            io.sockets.sockets.get(matchedSession.socketId)?.join(roomId);
+            const waitingSocket = io.sockets.sockets.get(matchedSession.socketId);
+            if (!waitingSocket) {
+              await CallSession.findByIdAndDelete(roomId);
+              await MatchSession.create({ user: userId, socketId: socket.id, status: 'QUEUED' });
+              return;
+            }
+            await Promise.all([socket.join(roomId), waitingSocket.join(roomId)]);
+            pendingCallStarts.set(roomId, {
+              initiatorSocketId: matchedSession.socketId,
+              participantSocketIds: new Set([socket.id, matchedSession.socketId]),
+              readySocketIds: new Set()
+            });
 
             io.to(roomId).emit('match-found', { roomId, callSession });
-
-            // Initiator will be the one who was waiting in the queue
-            io.to(matchedSession.socketId).emit('initiate-call', { roomId });
           } else {
             await MatchSession.create({ user: userId, socketId: socket.id, status: 'QUEUED' });
           }
@@ -151,6 +168,21 @@ export const setupSockets = (io: Server) => {
 
     socket.on('leave-match-queue', async () => {
       await MatchSession.findOneAndDelete({ user: userId });
+    });
+
+    socket.on('peer-ready', (data: { roomId?: string }) => {
+      const roomId = data?.roomId;
+      if (!roomId) return;
+
+      const pendingCall = pendingCallStarts.get(roomId);
+      if (!pendingCall || !pendingCall.participantSocketIds.has(socket.id)) return;
+
+      pendingCall.readySocketIds.add(socket.id);
+      if (pendingCall.readySocketIds.size === pendingCall.participantSocketIds.size) {
+        // The first queued participant is consistently the offer initiator.
+        io.to(pendingCall.initiatorSocketId).emit('initiate-call', { roomId });
+        pendingCallStarts.delete(roomId);
+      }
     });
 
     // WebRTC Signaling
@@ -223,6 +255,7 @@ export const setupSockets = (io: Server) => {
           });
         }
         io.to(roomId).emit('call-ended');
+        pendingCallStarts.delete(roomId);
         
         // Make everyone leave the room
         const room = io.sockets.adapter.rooms.get(roomId);
@@ -250,6 +283,10 @@ export const setupSockets = (io: Server) => {
 
       // Clean up queue
       await MatchSession.findOneAndDelete({ socketId: socket.id });
+
+      for (const [roomId, pendingCall] of pendingCallStarts) {
+        if (pendingCall.participantSocketIds.has(socket.id)) pendingCallStarts.delete(roomId);
+      }
 
       // End any active calls this user was in
       try {

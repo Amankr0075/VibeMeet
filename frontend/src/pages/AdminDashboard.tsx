@@ -842,10 +842,11 @@ const AdminDashboard: React.FC = () => {
 
   const filteredMembers = members.filter((m) => {
     const q = searchQuery.toLowerCase();
-    const matchesSearch = m.name?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q) || m.username?.toLowerCase().includes(q);
+    // If no search query, include all members regardless of missing fields
+    const matchesSearch = q === '' || (m.name?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q) || m.username?.toLowerCase().includes(q));
     if (!matchesSearch) return false;
     if (statusFilter === 'ACTIVE') return m.accountStatus === 'ACTIVE';
-    if (statusFilter === 'BANNED') return m.accountStatus === 'BANNED' || m.accountStatus === 'AI_BLOCKED' || m.accountStatus === 'SUSPENDED';
+    if (statusFilter === 'BANNED') return ['BANNED', 'AI_BLOCKED', 'SUSPENDED'].includes(m.accountStatus);
     return true;
   });
 

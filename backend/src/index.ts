@@ -59,6 +59,7 @@ const isAllowedOrigin = (origin?: string) => {
     origin.endsWith('.vercel.app') ||
     origin.endsWith('.ngrok.io') ||
     origin.endsWith('.ngrok-free.app') ||
+    origin.endsWith('.ngrok-free.dev') ||
     clientOrigins.includes(origin) ||
     // Vite is configured with host: true for device testing. Permit other
     // devices on the same private network while developing, but never open

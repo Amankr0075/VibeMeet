@@ -2,7 +2,7 @@
 // In development, empty API_BASE uses relative paths proxied by Vite dev server (/api -> http://localhost:5000/api)
 // which eliminates CORS, hostname, and IPv4/IPv6 mismatch issues.
 export const API_BASE = import.meta.env.VITE_API_URL !== undefined
-  ? String(import.meta.env.VITE_API_URL).replace(/\/$/, '')
+  ? String(import.meta.env.VITE_API_URL).trim().replace(/\/$/, '')
   : '';
 
 export const apiUrl = (path: string): string => {
@@ -12,7 +12,7 @@ export const apiUrl = (path: string): string => {
 
 export const getSocketUrl = (): string => {
   if (import.meta.env.VITE_SOCKET_URL) {
-    return String(import.meta.env.VITE_SOCKET_URL).replace(/\/$/, '');
+    return String(import.meta.env.VITE_SOCKET_URL).trim().replace(/\/$/, '');
   }
 
   // Deployed Vercel clients cannot use localhost:5000: that address points to

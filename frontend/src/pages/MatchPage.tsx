@@ -21,6 +21,18 @@ const AVATAR_PRESETS = [
   'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80'
 ];
 
+const iceServers: RTCIceServer[] = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  ...(import.meta.env.VITE_TURN_URL
+    ? [{
+        urls: import.meta.env.VITE_TURN_URL,
+        username: import.meta.env.VITE_TURN_USERNAME,
+        credential: import.meta.env.VITE_TURN_CREDENTIAL
+      }]
+    : [])
+];
+
 // Live Particle Background Component
 const LiveAtmosphere: React.FC = () => {
   const particles = Array.from({ length: 22 }, (_, i) => ({
@@ -238,6 +250,9 @@ const MatchPage: React.FC = () => {
       setRoomId(data.roomId);
       setMessages([]);
       setSafetyWarning(null);
+      // The server starts WebRTC only after both matched browsers confirm
+      // their media stream and signaling room are ready.
+      if (streamRef.current) socket.emit('peer-ready', { roomId: data.roomId });
     });
 
     socket.on('initiate-call', (data: { roomId: string }) => {
@@ -253,10 +268,7 @@ const MatchPage: React.FC = () => {
         trickle: false,
         stream: currentStream,
         config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
-          ]
+          iceServers
         }
       });
       newPeer.on('signal', (s: SignalData) => socket.emit('call-offer', { offer: s, roomId: data.roomId }));
@@ -281,10 +293,7 @@ const MatchPage: React.FC = () => {
         trickle: false,
         stream: currentStream,
         config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
-          ]
+          iceServers
         }
       });
       newPeer.on('signal', (s: SignalData) => socket.emit('call-answer', { answer: s, roomId: data.roomId }));
