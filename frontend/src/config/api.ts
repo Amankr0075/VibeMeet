@@ -34,7 +34,13 @@ export const getSocketUrl = (): string => {
       // Fall through to the local development default below.
     }
   }
-  // If in browser, use current origin (proxied by Vite) or fallback to localhost:5000
+
+  // When deployed to production (e.g. Vercel), connect socket directly to the live backend tunnel
+  if (typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return 'https://zodiac-snooper-cornfield.ngrok-free.dev';
+  }
+
+  // If in browser local dev, use current origin (proxied by Vite) or fallback to localhost:5000
   if (typeof window !== 'undefined' && window.location && window.location.origin) {
     return window.location.origin;
   }

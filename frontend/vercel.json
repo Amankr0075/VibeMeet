@@ -1,14 +1,12 @@
 {
-    "rewrites": [
-        {
-            "source": "/(.*)",
-            "destination": "/$1"
-        }
-    ],
-    "routes": [
-        {
-            "src": "/api/(.*)",
-            "dest": "https://zodiac-snooper-cornfield.ngrok-free.dev/api/$1"
-        }
-    ]
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://zodiac-snooper-cornfield.ngrok-free.dev/api/:path*"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
 }
