@@ -195,7 +195,7 @@ export const setupSockets = (io: Server) => {
     });
 
     socket.on('ice-candidate', (data: { candidate: any, roomId: string }) => {
-      socket.to(data.roomId).emit('ice-candidate', { candidate: data.candidate });
+      socket.to(data.roomId).emit('ice-candidate', { candidate: data.candidate, roomId: data.roomId });
     });
 
     // Chat — broadcast immediately AND persist to database

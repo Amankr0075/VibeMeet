@@ -11,13 +11,11 @@ export const apiUrl = (path: string): string => {
 };
 
 // Free ngrok tunnels show an HTML interstitial to browser fetch requests unless
-// this header is present. Keep it centralized so authenticated admin requests
-// and ordinary API requests both reach the real backend JSON endpoints.
+// this header is present. Set it unconditionally so authenticated requests, admin
+// dashboard data fetching, and API calls always reach the real backend.
 export const apiFetch = (path: string, init: RequestInit = {}): Promise<Response> => {
   const headers = new Headers(init.headers);
-  if (API_BASE.includes('.ngrok-free.app') || API_BASE.includes('.ngrok.io')) {
-    headers.set('ngrok-skip-browser-warning', 'true');
-  }
+  headers.set('ngrok-skip-browser-warning', 'true');
   return fetch(apiUrl(path), { ...init, headers });
 };
 
@@ -37,7 +35,7 @@ export const getSocketUrl = (): string => {
     }
   }
   // If in browser, use current origin (proxied by Vite) or fallback to localhost:5000
-  if (typeof window !== 'undefined' && window.location && window.location.port === '5175') {
+  if (typeof window !== 'undefined' && window.location && window.location.origin) {
     return window.location.origin;
   }
   return 'http://localhost:5000';

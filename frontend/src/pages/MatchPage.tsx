@@ -26,6 +26,7 @@ const AVATAR_PRESETS = [
 // time-limited TURN credentials via the VITE_TURN_* variables below.
 const fallbackTurnServer: RTCIceServer = {
   urls: [
+    'turn:openrelay.metered.ca:80',
     'turn:openrelay.metered.ca:80?transport=tcp',
     'turn:openrelay.metered.ca:443?transport=tcp',
     'turns:openrelay.metered.ca:443?transport=tcp'
@@ -100,7 +101,9 @@ const MatchPage: React.FC = () => {
   const [status, setStatus] = useState<'IDLE' | 'QUEUED' | 'MATCHED' | 'IN_CALL'>('IDLE');
 
   const peerRef = useRef<Peer.Instance | null>(null);
+  const pendingCandidatesRef = useRef<SignalData[]>([]);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const roomIdRef = useRef<string | null>(null);
 
   const userVideo = useRef<HTMLVideoElement>(null);
   const myVideo = useRef<HTMLVideoElement>(null);
@@ -108,6 +111,8 @@ const MatchPage: React.FC = () => {
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isAudioOn, setIsAudioOn] = useState(true);
   const [roomId, setRoomId] = useState<string | null>(null);
+  // Keep a ref in sync with roomId so socket callbacks can read the latest value
+  useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [onlineCount, setOnlineCount] = useState<number | null>(null);
 
@@ -139,10 +144,8 @@ const MatchPage: React.FC = () => {
     const socketUrl = getSocketUrl();
     const newSocket = io(socketUrl, {
       auth: { token },
-      // Ngrok's free tunnel serves an HTML warning to HTTP polling requests.
-      // A direct WebSocket connection avoids that page and is also the right
-      // transport for a Vercel frontend talking to a laptop-hosted backend.
-      transports: ['websocket'],
+      extraHeaders: { 'ngrok-skip-browser-warning': 'true' },
+      transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5
     });
@@ -198,6 +201,7 @@ const MatchPage: React.FC = () => {
       setMediaError(null);
       if (myVideo.current) {
         myVideo.current.srcObject = currentStream;
+        myVideo.current.play().catch(() => {/* autoplay policy — muted video plays fine */});
       }
       return currentStream;
     } catch (err: any) {
@@ -261,66 +265,155 @@ const MatchPage: React.FC = () => {
     socket.on('match-found', (data: { roomId: string }) => {
       setStatus('MATCHED');
       setRoomId(data.roomId);
+      roomIdRef.current = data.roomId;
       setMessages([]);
       setSafetyWarning(null);
-      // The server starts WebRTC only after both matched browsers confirm
-      // their media stream and signaling room are ready.
-      if (streamRef.current) socket.emit('peer-ready', { roomId: data.roomId });
+      pendingCandidatesRef.current = [];
+      // Notify server this peer's media is confirmed and ready
+      socket.emit('peer-ready', { roomId: data.roomId });
     });
 
     socket.on('initiate-call', (data: { roomId: string }) => {
       const currentStream = streamRef.current;
-      if (!currentStream) return;
+      if (!currentStream) {
+        console.warn('initiate-call received but no local stream available');
+        return;
+      }
 
       if (peerRef.current) {
         peerRef.current.destroy();
+        peerRef.current = null;
       }
 
       const newPeer = new Peer({
         initiator: true,
-        trickle: false,
+        trickle: true,
         stream: currentStream,
-        config: {
-          iceServers
+        config: { iceServers }
+      });
+
+      newPeer.on('signal', (s: SignalData) => {
+        if ((s as any).type === 'offer') {
+          socket.emit('call-offer', { offer: s, roomId: data.roomId });
+        } else if ((s as any).type === 'candidate' || (s as any).candidate) {
+          socket.emit('ice-candidate', { candidate: s, roomId: data.roomId });
         }
       });
-      newPeer.on('signal', (s: SignalData) => socket.emit('call-offer', { offer: s, roomId: data.roomId }));
+
       newPeer.on('stream', (rStream: MediaStream) => {
         setRemoteStream(rStream);
         setStatus('IN_CALL');
+        if (userVideo.current) {
+          userVideo.current.srcObject = rStream;
+          userVideo.current.play().catch(() => {});
+        }
       });
-      newPeer.on('error', () => endCallCleanup());
+
+      newPeer.on('error', (err) => {
+        console.error('Peer error (initiator):', err);
+        endCallCleanup();
+      });
+
+      newPeer.on('close', () => endCallCleanup());
       peerRef.current = newPeer;
     });
 
     socket.on('call-offer', (data: { offer: SignalData; roomId: string }) => {
       const currentStream = streamRef.current;
-      if (!currentStream) return;
+      if (!currentStream) {
+        console.warn('call-offer received but no local stream available');
+        return;
+      }
 
+      // If an ICE candidate arrived in call-offer, forward safely without recreating peer
+      if ((data.offer as any).type === 'candidate' || (data.offer as any).candidate) {
+        if (peerRef.current) {
+          try { peerRef.current.signal(data.offer); } catch (e) { console.warn('ICE candidate signal error:', e); }
+        } else {
+          pendingCandidatesRef.current.push(data.offer);
+        }
+        return;
+      }
+
+      // SDP Offer received — create answering peer
       if (peerRef.current) {
         peerRef.current.destroy();
+        peerRef.current = null;
       }
 
       const newPeer = new Peer({
         initiator: false,
-        trickle: false,
+        trickle: true,
         stream: currentStream,
-        config: {
-          iceServers
+        config: { iceServers }
+      });
+
+      newPeer.on('signal', (s: SignalData) => {
+        if ((s as any).type === 'answer') {
+          socket.emit('call-answer', { answer: s, roomId: data.roomId });
+        } else if ((s as any).type === 'candidate' || (s as any).candidate) {
+          socket.emit('ice-candidate', { candidate: s, roomId: data.roomId });
         }
       });
-      newPeer.on('signal', (s: SignalData) => socket.emit('call-answer', { answer: s, roomId: data.roomId }));
+
       newPeer.on('stream', (rStream: MediaStream) => {
         setRemoteStream(rStream);
         setStatus('IN_CALL');
+        if (userVideo.current) {
+          userVideo.current.srcObject = rStream;
+          userVideo.current.play().catch(() => {});
+        }
       });
-      newPeer.on('error', () => endCallCleanup());
+
+      newPeer.on('error', (err) => {
+        console.error('Peer error (receiver):', err);
+        endCallCleanup();
+      });
+
+      newPeer.on('close', () => endCallCleanup());
       peerRef.current = newPeer;
-      newPeer.signal(data.offer);
+
+      // Apply the offer to simple-peer
+      try {
+        newPeer.signal(data.offer);
+      } catch (err) {
+        console.error('Failed to signal remote offer:', err);
+      }
+
+      // Apply any ICE candidates that were buffered before the offer arrived
+      if (pendingCandidatesRef.current.length > 0) {
+        pendingCandidatesRef.current.forEach((cand) => {
+          try {
+            newPeer.signal(cand);
+          } catch (e) {
+            console.warn('Error applying buffered candidate:', e);
+          }
+        });
+        pendingCandidatesRef.current = [];
+      }
     });
 
     socket.on('call-answer', (data: { answer: SignalData }) => {
-      peerRef.current?.signal(data.answer);
+      if (peerRef.current && data.answer) {
+        try {
+          peerRef.current.signal(data.answer);
+        } catch (err) {
+          console.error('Failed to signal answer:', err);
+        }
+      }
+    });
+
+    socket.on('ice-candidate', (data: { candidate: SignalData }) => {
+      if (!data?.candidate) return;
+      if (peerRef.current) {
+        try {
+          peerRef.current.signal(data.candidate);
+        } catch (err) {
+          console.warn('Failed to signal ICE candidate:', err);
+        }
+      } else {
+        pendingCandidatesRef.current.push(data.candidate);
+      }
     });
 
     socket.on('call-ended', () => {
@@ -345,6 +438,7 @@ const MatchPage: React.FC = () => {
       socket.off('initiate-call');
       socket.off('call-offer');
       socket.off('call-answer');
+      socket.off('ice-candidate');
       socket.off('call-ended');
       socket.off('chat-message');
       socket.off('safety-warning');
@@ -352,10 +446,11 @@ const MatchPage: React.FC = () => {
     };
   }, [socket]);
 
-  // Bind remote stream to video element
+  // Bind remote stream to video element whenever it changes
   useEffect(() => {
     if (userVideo.current && remoteStream) {
       userVideo.current.srcObject = remoteStream;
+      userVideo.current.play().catch(() => {});
     }
   }, [remoteStream, status]);
 
@@ -614,7 +709,24 @@ const MatchPage: React.FC = () => {
         {/* Remote Video Surface */}
         <div className="absolute inset-0 bg-transparent flex items-center justify-center">
           {status === 'IN_CALL' && remoteStream ? (
-            <video ref={userVideo} autoPlay playsInline className="w-full h-full object-cover" />
+            <div className="relative w-full h-full flex items-center justify-center">
+              <video
+                ref={(el) => {
+                  (userVideo as any).current = el;
+                  if (el && remoteStream && el.srcObject !== remoteStream) {
+                    el.srcObject = remoteStream;
+                    el.play().catch(e => console.warn('User video autoplay prevented:', e));
+                  }
+                }}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-xs font-semibold text-emerald-400">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Live Video Active
+              </div>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center text-center p-6 max-w-3xl">
 

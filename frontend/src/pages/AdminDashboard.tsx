@@ -30,6 +30,9 @@ interface MemberUser {
   email: string;
   gender?: string;
   preferredGender?: string;
+  isCollegeStudent?: boolean;
+  institutionName?: string;
+  bio?: string;
   role: 'USER' | 'ADMIN';
   accountStatus: 'ACTIVE' | 'BANNED' | 'SUSPENDED' | 'AI_BLOCKED';
   profileImage?: string;
@@ -672,10 +675,28 @@ const AdminDashboard: React.FC = () => {
   };
 
   const loadAllData = async () => {
+    if (!token) return;
     setRefreshing(true);
     setLoadError(null);
     try {
-      await Promise.all([fetchStats(), fetchMembers(), fetchCalls(), fetchIncidents(), fetchMessages(), fetchLandingContent()]);
+      const results = await Promise.allSettled([
+        fetchStats(),
+        fetchMembers(),
+        fetchCalls(),
+        fetchIncidents(),
+        fetchMessages(),
+        fetchLandingContent()
+      ]);
+      const failures = results
+        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+        .map(r => r.reason?.message || 'Failed to load');
+
+      // Only display the error banner if every single data request failed
+      if (failures.length === results.length) {
+        setLoadError(failures[0] || 'Unable to load dashboard data. Check backend server connection.');
+      } else if (failures.length > 0) {
+        console.warn('Some admin datasets failed to load:', failures);
+      }
     } catch (err: any) {
       console.error('Failed to load admin dashboard data:', err);
       setLoadError(err.message || 'Unable to load dashboard data.');
@@ -693,9 +714,18 @@ const AdminDashboard: React.FC = () => {
       const isBanned = currentStatus === 'BANNED' || currentStatus === 'AI_BLOCKED';
       const endpoint = isBanned ? `/api/admin/unblock/${targetId}` : `/api/admin/block/${targetId}`;
       const res = await apiFetch(endpoint, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
-      if (res.ok) await Promise.all([fetchStats(), fetchMembers()]);
-    } catch (err) { console.error(err); }
-    finally { setActionLoading(null); }
+      const data = await res.json();
+      if (res.ok) {
+        await Promise.all([fetchStats(), fetchMembers()]);
+      } else {
+        alert(data.error || 'Failed to update user account status.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Failed to update user account status.');
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleDeleteUser = async (targetId: string, email: string) => {
@@ -704,34 +734,65 @@ const AdminDashboard: React.FC = () => {
     try {
       const res = await apiFetch(`/api/admin/users/${targetId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
       const data = await res.json();
-      if (res.ok) { await Promise.all([fetchStats(), fetchMembers()]); }
-      else alert(data.error || 'Failed to delete user.');
-    } catch (err) { console.error(err); }
-    finally { setActionLoading(null); }
+      if (res.ok) {
+        await Promise.all([fetchStats(), fetchMembers()]);
+      } else {
+        alert(data.error || 'Failed to delete user.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Failed to delete user.');
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleDeleteCall = async (callId: string) => {
     if (!window.confirm('Permanently delete this call session record?')) return;
     try {
       const res = await apiFetch(`/api/admin/calls/${callId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-      if (res.ok) await Promise.all([fetchStats(), fetchCalls()]);
-    } catch (err) { console.error(err); }
+      const data = await res.json();
+      if (res.ok) {
+        await Promise.all([fetchStats(), fetchCalls()]);
+      } else {
+        alert(data.error || 'Failed to delete call session record.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Failed to delete call session record.');
+    }
   };
 
   const handleDeleteIncident = async (incidentId: string) => {
     if (!window.confirm('Delete this incident record?')) return;
     try {
       const res = await apiFetch(`/api/admin/incidents/${incidentId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-      if (res.ok) await Promise.all([fetchStats(), fetchIncidents()]);
-    } catch (err) { console.error(err); }
+      const data = await res.json();
+      if (res.ok) {
+        await Promise.all([fetchStats(), fetchIncidents()]);
+      } else {
+        alert(data.error || 'Failed to delete incident.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Failed to delete incident.');
+    }
   };
 
   const handleDeleteMessage = async (msgId: string) => {
     if (!window.confirm('Delete this support ticket?')) return;
     try {
       const res = await apiFetch(`/api/admin/messages/${msgId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-      if (res.ok) await fetchMessages();
-    } catch (err) { console.error(err); }
+      const data = await res.json();
+      if (res.ok) {
+        await fetchMessages();
+      } else {
+        alert(data.error || 'Failed to delete message.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Failed to delete message.');
+    }
   };
 
   const handleSendAdminEmail = async (e: React.FormEvent) => {
@@ -1397,14 +1458,14 @@ const AdminDashboard: React.FC = () => {
                     <table className="w-full text-sm">
                       <thead>
                         <tr style={{ borderBottom: '1px solid rgba(236,72,153,0.15)', background: 'rgba(236,72,153,0.02)' }}>
-                          {['User', 'Email', 'Role', 'Gender', 'Status', 'Actions'].map((h, i) => (
-                            <th key={h} className={`px-6 py-4 text-[11px] font-black uppercase tracking-widest text-pink-200/80 ${i === 5 ? 'text-right' : 'text-left'}`}>{h}</th>
+                          {['User', 'Email', 'Role', 'Gender & Preference', 'Details & Joined', 'Status', 'Actions'].map((h, i) => (
+                            <th key={h} className={`px-6 py-4 text-[11px] font-black uppercase tracking-widest text-pink-200/80 ${i === 6 ? 'text-right' : 'text-left'}`}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {filteredMembers.length === 0 ? (
-                          <tr><td colSpan={6} className="py-16 text-center text-slate-500">No members match your criteria.</td></tr>
+                          <tr><td colSpan={7} className="py-16 text-center text-slate-500">No members match your criteria.</td></tr>
                         ) : (
                           filteredMembers.map(m => (
                             <tr key={m._id} className="group transition-colors" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
@@ -1415,7 +1476,9 @@ const AdminDashboard: React.FC = () => {
                                   <Avatar name={m.name} img={m.profileImage} size={8} />
                                   <div>
                                     <p className="font-semibold text-white text-sm">{m.name}</p>
-                                    <p className="text-[11px] text-slate-500">{m.username ? `@${m.username}` : '—'}</p>
+                                    <p className="text-[11px] text-pink-400/80 font-mono">
+                                      {m.username ? `@${m.username}` : `@${m.email.split('@')[0]}`}
+                                    </p>
                                   </div>
                                 </div>
                               </td>
@@ -1425,7 +1488,18 @@ const AdminDashboard: React.FC = () => {
                                   {m.role}
                                 </span>
                               </td>
-                              <td className="px-6 py-4 text-xs text-slate-400">{m.gender || '—'} → {m.preferredGender || '—'}</td>
+                              <td className="px-6 py-4 text-xs">
+                                <div className="text-slate-300 font-medium">{m.gender || 'Not specified'}</div>
+                                <div className="text-[11px] text-slate-500">Prefers: {m.preferredGender || 'Everyone'}</div>
+                              </td>
+                              <td className="px-6 py-4 text-xs">
+                                <div className="text-slate-400">{new Date(m.createdAt).toLocaleDateString()}</div>
+                                {m.isCollegeStudent && (
+                                  <div className="text-[10px] font-semibold text-blue-400 mt-0.5 truncate max-w-[150px]" title={m.institutionName || 'College Student'}>
+                                    🎓 {m.institutionName || 'Student'}
+                                  </div>
+                                )}
+                              </td>
                               <td className="px-6 py-4"><StatusBadge status={m.accountStatus} /></td>
                               <td className="px-6 py-4">
                                 <div className="flex items-center justify-end gap-2">
