@@ -7,7 +7,7 @@ import {
   PhoneCall, Sparkles, Trash2, Mail, Reply, Send,
   Clock, CheckCircle2, MessageSquare, AlertCircle, X,
   Zap, ChevronRight, Database, Wifi, Bot, AtSign,
-  UserSearch, Download, Link, Megaphone
+  UserSearch, Download, Link, Megaphone, KeyRound, Eye, EyeOff, Lock
 } from 'lucide-react';
 import { apiFetch } from '../config/api';
 import jsPDF from 'jspdf';
@@ -163,6 +163,22 @@ const AdminDashboard: React.FC = () => {
   const [broadcastSuccess, setBroadcastSuccess] = useState<string | null>(null);
   const [broadcastError, setBroadcastError] = useState<string | null>(null);
 
+  // Password change modal state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [pwMode, setPwMode] = useState<'self' | 'user'>('self');
+  const [pwTargetEmail, setPwTargetEmail] = useState('');
+  const [pwTargetUser, setPwTargetUser] = useState<{ _id: string; name: string; email: string } | null>(null);
+  const [pwSearchLoading, setPwSearchLoading] = useState(false);
+  const [pwSearchError, setPwSearchError] = useState<string | null>(null);
+  const [pwCurrentPassword, setPwCurrentPassword] = useState('');
+  const [pwNewPassword, setPwNewPassword] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [pwShowCurrent, setPwShowCurrent] = useState(false);
+  const [pwShowNew, setPwShowNew] = useState(false);
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwSuccess, setPwSuccess] = useState<string | null>(null);
+  const [pwError, setPwError] = useState<string | null>(null);
+
   const handleInvestigationSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!investigationQuery.trim()) return;
@@ -180,6 +196,70 @@ const AdminDashboard: React.FC = () => {
       setInvestigationError(err.message);
     } finally {
       setInvestigationLoading(false);
+    }
+  };
+
+  const handlePasswordUserSearch = async (e?: React.SyntheticEvent) => {
+    if (e) e.preventDefault();
+    if (!pwTargetEmail.trim()) return;
+    setPwSearchLoading(true);
+    setPwSearchError(null);
+    setPwTargetUser(null);
+    try {
+      const res = await apiFetch(`/api/admin/user-profile?query=${encodeURIComponent(pwTargetEmail.trim())}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'User not found');
+      setPwTargetUser({ _id: data.user._id, name: data.user.name, email: data.user.email });
+    } catch (err: any) {
+      setPwSearchError(err.message);
+    } finally {
+      setPwSearchLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwError(null);
+    setPwSuccess(null);
+    if (pwNewPassword !== pwConfirm) {
+      setPwError('New passwords do not match.');
+      return;
+    }
+    if (pwNewPassword.length < 8) {
+      setPwError('Password must be at least 8 characters.');
+      return;
+    }
+    if (pwMode === 'user' && !pwTargetUser) {
+      setPwError('Please search and select a user first.');
+      return;
+    }
+    setPwLoading(true);
+    try {
+      const body: Record<string, string> = { newPassword: pwNewPassword };
+      if (pwMode === 'self') {
+        body.currentPassword = pwCurrentPassword;
+      } else {
+        body.targetUserId = pwTargetUser!._id;
+      }
+      const res = await apiFetch('/api/admin/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to change password.');
+      setPwSuccess(data.message);
+      setPwCurrentPassword('');
+      setPwNewPassword('');
+      setPwConfirm('');
+      setPwTargetUser(null);
+      setPwTargetEmail('');
+    } catch (err: any) {
+      setPwError(err.message);
+    } finally {
+      setPwLoading(false);
     }
   };
 
@@ -1011,9 +1091,18 @@ const AdminDashboard: React.FC = () => {
                 <p className="text-xs font-bold text-white truncate">{user.name}</p>
                 <p className="text-[10px] text-purple-400 font-semibold">Super Administrator</p>
               </div>
-              <button onClick={handleLogout} className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all" title="Sign Out">
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => { setShowPasswordModal(true); setPwMode('self'); setPwSuccess(null); setPwError(null); setPwCurrentPassword(''); setPwNewPassword(''); setPwConfirm(''); }}
+                  className="p-1.5 text-slate-500 hover:text-purple-400 hover:bg-purple-500/10 rounded-xl transition-all"
+                  title="Change Password"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={handleLogout} className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all" title="Sign Out">
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1220,13 +1309,32 @@ const AdminDashboard: React.FC = () => {
                               <p className="text-slate-400 text-sm">{u.username ? `@${u.username}` : ''} · {u.email}</p>
                               <p className="text-slate-500 text-xs mt-1">{u.gender || '—'} → {u.preferredGender || '—'} · Role: <span className="text-purple-400 font-bold">{u.role}</span></p>
                             </div>
-                            <button onClick={handleDownloadReport}
-                              className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black transition-all"
-                              style={{ background: 'rgba(14,165,233,0.12)', border: '1px solid rgba(14,165,233,0.3)', color: '#7dd3fc' }}
-                              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(14,165,233,0.22)')}
-                              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(14,165,233,0.12)')}>
-                              <Download className="w-4 h-4" /> Download Report
-                            </button>
+                            <div className="flex flex-wrap gap-2 shrink-0">
+                              <button
+                                onClick={() => {
+                                  setShowPasswordModal(true);
+                                  setPwMode('user');
+                                  setPwTargetUser({ _id: u._id, name: u.name, email: u.email });
+                                  setPwTargetEmail(u.email);
+                                  setPwSuccess(null);
+                                  setPwError(null);
+                                  setPwNewPassword('');
+                                  setPwConfirm('');
+                                }}
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-black transition-all cursor-pointer"
+                                style={{ background: 'rgba(236,72,153,0.12)', border: '1px solid rgba(236,72,153,0.3)', color: '#f472b6' }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(236,72,153,0.22)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(236,72,153,0.12)')}>
+                                <KeyRound className="w-4 h-4" /> Change Password
+                              </button>
+                              <button onClick={handleDownloadReport}
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black transition-all cursor-pointer"
+                                style={{ background: 'rgba(14,165,233,0.12)', border: '1px solid rgba(14,165,233,0.3)', color: '#7dd3fc' }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(14,165,233,0.22)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(14,165,233,0.12)')}>
+                                <Download className="w-4 h-4" /> Download Report
+                              </button>
+                            </div>
                           </div>
 
                           {/* Metric pills */}
@@ -1504,11 +1612,29 @@ const AdminDashboard: React.FC = () => {
                               <td className="px-6 py-4">
                                 <div className="flex items-center justify-end gap-2">
                                   <button onClick={() => handleComposeToUser(m.email)}
-                                    className="p-2 rounded-xl transition-all" title="Send email"
+                                    className="p-2 rounded-xl transition-all cursor-pointer" title="Send email"
                                     style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)', color: '#a78bfa' }}
                                     onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.25)')}
                                     onMouseLeave={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.12)')}>
                                     <Mail size={13} />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setShowPasswordModal(true);
+                                      setPwMode(m._id === user._id ? 'self' : 'user');
+                                      setPwTargetUser({ _id: m._id, name: m.name, email: m.email });
+                                      setPwTargetEmail(m.email);
+                                      setPwSuccess(null);
+                                      setPwError(null);
+                                      setPwNewPassword('');
+                                      setPwConfirm('');
+                                    }}
+                                    className="p-2 rounded-xl transition-all cursor-pointer"
+                                    title={m._id === user._id ? "Change My Password" : "Change User Password"}
+                                    style={{ background: 'rgba(236,72,153,0.12)', border: '1px solid rgba(236,72,153,0.25)', color: '#f472b6' }}
+                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(236,72,153,0.25)')}
+                                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(236,72,153,0.12)')}>
+                                    <KeyRound size={13} />
                                   </button>
                                   {m._id !== user._id && (
                                     <>
@@ -1986,6 +2112,166 @@ const AdminDashboard: React.FC = () => {
               {eventFormData.imageUrl && <img src={eventFormData.imageUrl} alt="Preview" className="h-24 w-full object-cover rounded-lg border border-white/10" />}
 
               <button type="submit" className="w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold tracking-wide hover:opacity-90">Set Event Data</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Change Password Modal ─── */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
+          <div className="w-full max-w-md rounded-[2rem] border border-white/10 shadow-2xl" style={{ background: 'linear-gradient(145deg,#0f172a,#1e1b4b)' }}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-white/[0.07]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#7c3aed,#ec4899)' }}>
+                  <Lock className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-base font-black text-white">Change Password</h2>
+                  <p className="text-[11px] text-slate-400">Admin password management</p>
+                </div>
+              </div>
+              <button onClick={() => setShowPasswordModal(false)} className="p-2 text-slate-500 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Mode Toggle */}
+            <div className="p-4 border-b border-white/[0.07]">
+              <div className="flex rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <button
+                  type="button"
+                  onClick={() => { setPwMode('self'); setPwTargetUser(null); setPwTargetEmail(''); setPwError(null); setPwSuccess(null); }}
+                  className="flex-1 py-2.5 text-xs font-bold transition-all"
+                  style={pwMode === 'self' ? { background: 'linear-gradient(135deg,#7c3aed,#ec4899)', color: '#fff' } : { color: '#64748b' }}
+                >
+                  🔑 My Password
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setPwMode('user'); setPwError(null); setPwSuccess(null); }}
+                  className="flex-1 py-2.5 text-xs font-bold transition-all"
+                  style={pwMode === 'user' ? { background: 'linear-gradient(135deg,#7c3aed,#ec4899)', color: '#fff' } : { color: '#64748b' }}
+                >
+                  👤 User's Password
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleChangePassword} className="p-6 space-y-4">
+
+              {/* User search (user mode) */}
+              {pwMode === 'user' && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Find User</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={pwTargetEmail}
+                      onChange={e => { setPwTargetEmail(e.target.value); setPwTargetUser(null); }}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handlePasswordUserSearch(e); } }}
+                      placeholder="Email or username..."
+                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500/50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handlePasswordUserSearch()}
+                      disabled={pwSearchLoading}
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all cursor-pointer"
+                      style={{ background: 'linear-gradient(135deg,#7c3aed,#ec4899)' }}
+                    >
+                      {pwSearchLoading ? '...' : <Search className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {pwSearchError && <p className="text-xs text-red-400 mt-2">{pwSearchError}</p>}
+                  {pwTargetUser && (
+                    <div className="mt-3 flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <div>
+                        <p className="text-xs font-bold text-emerald-300">{pwTargetUser.name}</p>
+                        <p className="text-[11px] text-emerald-500">{pwTargetUser.email}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Current password (self mode only) */}
+              {pwMode === 'self' && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Password</label>
+                  <div className="relative">
+                    <input
+                      type={pwShowCurrent ? 'text' : 'password'}
+                      value={pwCurrentPassword}
+                      onChange={e => setPwCurrentPassword(e.target.value)}
+                      required
+                      placeholder="Your current password"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500/50 pr-10"
+                    />
+                    <button type="button" onClick={() => setPwShowCurrent(!pwShowCurrent)} className="absolute right-3 top-2.5 text-slate-500 hover:text-white">
+                      {pwShowCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* New password */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">New Password</label>
+                <div className="relative">
+                  <input
+                    type={pwShowNew ? 'text' : 'password'}
+                    value={pwNewPassword}
+                    onChange={e => setPwNewPassword(e.target.value)}
+                    required
+                    minLength={8}
+                    placeholder="Min. 8 characters"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500/50 pr-10"
+                  />
+                  <button type="button" onClick={() => setPwShowNew(!pwShowNew)} className="absolute right-3 top-2.5 text-slate-500 hover:text-white">
+                    {pwShowNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm password */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={pwConfirm}
+                  onChange={e => setPwConfirm(e.target.value)}
+                  required
+                  placeholder="Repeat new password"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500/50"
+                />
+              </div>
+
+              {/* Error / Success */}
+              {pwError && (
+                <div className="flex items-center gap-2 p-3 rounded-xl text-xs text-red-300" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                  {pwError}
+                </div>
+              )}
+              {pwSuccess && (
+                <div className="flex items-center gap-2 p-3 rounded-xl text-xs text-emerald-300" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                  {pwSuccess}
+                </div>
+              )}
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={pwLoading}
+                className="w-full py-3 rounded-xl font-extrabold text-sm text-white disabled:opacity-50 transition-all cursor-pointer"
+                style={{ background: 'linear-gradient(135deg,#7c3aed,#ec4899)', boxShadow: '0 8px 24px rgba(139,92,246,0.35)' }}
+              >
+                {pwLoading ? 'Updating…' : (pwMode === 'self' ? '🔑 Update My Password' : '🔑 Change User Password')}
+              </button>
             </form>
           </div>
         </div>

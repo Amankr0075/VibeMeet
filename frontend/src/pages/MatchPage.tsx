@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { Logo3D } from '../components/Logo3D';
 import { NotificationBell } from '../components/NotificationBell';
-import { apiUrl, getSocketUrl } from '../config/api';
+import { apiFetch, getSocketUrl } from '../config/api';
 
 const AVATAR_PRESETS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
@@ -40,10 +40,10 @@ const iceServers: RTCIceServer[] = [
   { urls: 'stun:stun1.l.google.com:19302' },
   ...(import.meta.env.VITE_TURN_URL
     ? [{
-        urls: import.meta.env.VITE_TURN_URL,
-        username: import.meta.env.VITE_TURN_USERNAME,
-        credential: import.meta.env.VITE_TURN_CREDENTIAL
-      }]
+      urls: import.meta.env.VITE_TURN_URL,
+      username: import.meta.env.VITE_TURN_USERNAME,
+      credential: import.meta.env.VITE_TURN_CREDENTIAL
+    }]
     : [fallbackTurnServer])
 ];
 
@@ -201,7 +201,7 @@ const MatchPage: React.FC = () => {
       setMediaError(null);
       if (myVideo.current) {
         myVideo.current.srcObject = currentStream;
-        myVideo.current.play().catch(() => {/* autoplay policy — muted video plays fine */});
+        myVideo.current.play().catch(() => {/* autoplay policy — muted video plays fine */ });
       }
       return currentStream;
     } catch (err: any) {
@@ -305,7 +305,7 @@ const MatchPage: React.FC = () => {
         setStatus('IN_CALL');
         if (userVideo.current) {
           userVideo.current.srcObject = rStream;
-          userVideo.current.play().catch(() => {});
+          userVideo.current.play().catch(() => { });
         }
       });
 
@@ -361,7 +361,7 @@ const MatchPage: React.FC = () => {
         setStatus('IN_CALL');
         if (userVideo.current) {
           userVideo.current.srcObject = rStream;
-          userVideo.current.play().catch(() => {});
+          userVideo.current.play().catch(() => { });
         }
       });
 
@@ -450,7 +450,7 @@ const MatchPage: React.FC = () => {
   useEffect(() => {
     if (userVideo.current && remoteStream) {
       userVideo.current.srcObject = remoteStream;
-      userVideo.current.play().catch(() => {});
+      userVideo.current.play().catch(() => { });
     }
   }, [remoteStream, status]);
 
@@ -566,7 +566,7 @@ const MatchPage: React.FC = () => {
     setProfileMsg(null);
 
     try {
-      const res = await fetch(apiUrl('/api/users/profile'), {
+      const res = await apiFetch('/api/users/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

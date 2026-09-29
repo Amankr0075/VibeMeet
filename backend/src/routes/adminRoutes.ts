@@ -19,7 +19,8 @@ import {
   updateLandingContent,
   getOnlineUsers,
   getUserProfile,
-  sendBroadcast
+  sendBroadcast,
+  adminChangePassword
 } from '../controllers/adminController';
 import { requireAuth } from '../middleware/authMiddleware';
 import { adminOnly } from '../middleware/adminMiddleware';
@@ -53,5 +54,8 @@ router.get('/online-users', requireAuth, adminOnly, getOnlineUsers);
 router.get('/user-profile', requireAuth, adminOnly, getUserProfile);
 
 router.get('/dump', requireAuth, adminOnly, dumpAllData);
+
+// Password management
+router.post('/change-password', requireAuth, adminOnly, adminChangePassword);
 
 export default router;

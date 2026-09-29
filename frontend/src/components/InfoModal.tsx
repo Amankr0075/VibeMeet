@@ -4,7 +4,7 @@ import {
   Send, AlertCircle, CheckCircle2, BadgeCheck, EyeOff, Radio, UserCheck, ShieldCheck
 } from 'lucide-react';
 import { Logo3D } from './Logo3D';
-import { apiUrl } from '../config/api';
+import { apiFetch } from '../config/api';
 
 export type InfoModalTab = 'about' | 'safety' | 'guidelines' | 'terms' | 'privacy' | 'contact';
 
@@ -55,7 +55,7 @@ export const InfoModal: React.FC<InfoModalProps> = ({
     setContactSuccess(null);
 
     try {
-      const res = await fetch(apiUrl('/api/contact'), {
+      const res = await apiFetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

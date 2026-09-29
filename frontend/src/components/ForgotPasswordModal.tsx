@@ -3,7 +3,7 @@ import {
   KeyRound, Mail, LockKeyhole, Eye, EyeOff, X, 
   ArrowLeft, CheckCircle2, AlertCircle, RefreshCw, Sparkles 
 } from 'lucide-react';
-import { apiUrl } from '../config/api';
+import { apiFetch } from '../config/api';
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -58,7 +58,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     setLoading(true);
 
     try {
-      const res = await fetch(apiUrl('/api/auth/forgot-password'), {
+      const res = await apiFetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim().toLowerCase() })
@@ -84,7 +84,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     setLoading(true);
 
     try {
-      const res = await fetch(apiUrl('/api/auth/forgot-password'), {
+      const res = await apiFetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim().toLowerCase() })
@@ -126,7 +126,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     setLoading(true);
 
     try {
-      const res = await fetch(apiUrl('/api/auth/reset-password'), {
+      const res = await apiFetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

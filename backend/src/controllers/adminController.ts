@@ -6,7 +6,7 @@ import ModerationIncident from '../models/ModerationIncident';
 import SupportMessage from '../models/SupportMessage';
 import LandingContent from '../models/LandingContent';
 import { Notification } from '../models/Notification';
-import { sendAdminCustomEmail, sendAccountStatusEmail } from '../services/emailService';
+import { sendAdminCustomEmail, sendAccountStatusEmail, sendAdminPasswordChangedEmail } from '../services/emailService';
 import { getOnlineUserIds, getOnlineCount, getIo } from '../sockets/socketHandler';
 
 // Helper to build pagination meta
@@ -489,5 +489,87 @@ export const sendBroadcast = async (req: Request, res: Response): Promise<void> 
     if (!res.headersSent) {
       res.status(500).json({ error: error.message || 'Failed to send broadcast' });
     }
+  }
+};
+
+// ─── Admin Change Password ───────────────────────────────────────────────────
+// POST /api/admin/change-password
+// Body: { targetUserId?: string, newPassword: string, currentPassword?: string }
+// - If targetUserId is omitted → admin is changing their own password (currentPassword required)
+// - If targetUserId is provided → admin changes another user's password (no currentPassword needed)
+export const adminChangePassword = async (req: Request, res: Response): Promise<void> => {
+  const adminId = (req as any).user?.userId;
+  const { targetUserId, newPassword, currentPassword } = req.body;
+
+  try {
+    const bcrypt = (await import('bcryptjs')).default;
+
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+      res.status(400).json({ error: 'New password must be at least 8 characters.' });
+      return;
+    }
+
+    const adminUser = await User.findById(adminId).select('+passwordHash');
+    if (!adminUser) {
+      res.status(404).json({ error: 'Admin account not found.' });
+      return;
+    }
+
+    const isSelfChange = !targetUserId || String(targetUserId) === String(adminId);
+
+    if (isSelfChange) {
+      // Changing own password — require current password verification
+      if (!currentPassword) {
+        res.status(400).json({ error: 'Current password is required to change your own password.' });
+        return;
+      }
+      const match = await bcrypt.compare(currentPassword, adminUser.passwordHash);
+      if (!match) {
+        res.status(401).json({ error: 'Current password is incorrect.' });
+        return;
+      }
+
+      const hash = await bcrypt.hash(newPassword, 12);
+      adminUser.passwordHash = hash;
+      await adminUser.save();
+
+      await AuditLog.create({ adminId, action: 'CHANGE_OWN_PASSWORD', targetUserId: adminId, timestamp: new Date() });
+
+      // Send notification email to admin themselves
+      sendAdminPasswordChangedEmail({
+        email: adminUser.email,
+        name: adminUser.name,
+        newPassword,
+        changedBy: adminUser.name
+      }).catch(err => console.error('Admin self-password email failed:', err));
+
+      res.json({ success: true, message: 'Your password has been updated successfully. A confirmation email has been sent.' });
+    } else {
+      // Changing another user's password
+      const targetUser = await User.findById(targetUserId).select('+passwordHash');
+      if (!targetUser) {
+        res.status(404).json({ error: 'Target user not found.' });
+        return;
+      }
+
+      const hash = await bcrypt.hash(newPassword, 12);
+      targetUser.passwordHash = hash;
+      await targetUser.save();
+
+      await AuditLog.create({ adminId, action: 'CHANGE_USER_PASSWORD', targetUserId, timestamp: new Date() });
+
+      // Send notification email to the user
+      sendAdminPasswordChangedEmail({
+        email: targetUser.email,
+        name: targetUser.name,
+        newPassword,
+        changedBy: adminUser.name
+      }).catch(err => console.error('User password-change email failed:', err));
+
+      res.json({ success: true, message: `Password for ${targetUser.email} has been updated. A notification email has been sent to them.` });
+    }
+  } catch (error: any) {
+    console.error('Admin change password error:', error);
+    res.status(500).json({ error: 'Failed to change password.' });
   }
 };

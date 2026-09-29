@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Shield, LockKeyhole, Mail, ArrowLeft, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Logo3D } from '../components/Logo3D';
-import { apiUrl } from '../config/api';
+import { apiFetch } from '../config/api';
 
 const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ const AdminLoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await fetch(apiUrl('/api/admin/login'), {
+      const res = await apiFetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

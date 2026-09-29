@@ -4,7 +4,7 @@ import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, CheckCircle2, Home, Sparkl
 import { useAuth } from '../context/AuthContext';
 import { Logo3D } from '../components/Logo3D';
 import { ForgotPasswordModal } from '../components/ForgotPasswordModal';
-import { apiUrl } from '../config/api';
+import { apiFetch } from '../config/api';
 import { GirlVideoCallCard, BoyVideoCallCard, MobileAuthCallPreview } from '../components/AuthVideoCallPanels';
 
 const LoginPage: React.FC = () => {
@@ -32,7 +32,7 @@ const LoginPage: React.FC = () => {
       let res, data;
       if (isOtpMode) {
         // Submit OTP
-        res = await fetch(apiUrl('/api/auth/verify-login-otp'), {
+        res = await apiFetch('/api/auth/verify-login-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, otp })
@@ -40,7 +40,7 @@ const LoginPage: React.FC = () => {
         data = await res.json();
       } else {
         // Normal Login
-        res = await fetch(apiUrl('/api/auth/login'), {
+        res = await apiFetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })

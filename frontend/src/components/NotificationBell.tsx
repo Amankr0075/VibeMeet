@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Bell, Megaphone, CheckCheck, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { apiUrl } from '../config/api';
+import { apiFetch } from '../config/api';
 
 interface Notification {
   _id: string;
@@ -39,7 +39,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ socket }) =>
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(apiUrl('/api/notifications'), {
+      const res = await apiFetch('/api/notifications', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -84,7 +84,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ socket }) =>
   const markAllAsRead = async () => {
     if (!token) return;
     try {
-      await fetch(apiUrl('/api/notifications/all/read'), {
+      await apiFetch('/api/notifications/all/read', {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -98,7 +98,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ socket }) =>
     if (!token) return;
     setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
     try {
-      await fetch(apiUrl(`/api/notifications/${id}/read`), {
+      await apiFetch(`/api/notifications/${id}/read`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       });

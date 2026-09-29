@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Check, Home, KeyRound, LockKeyhole, Mail, ShieldCheck, UserRound, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Logo3D } from '../components/Logo3D';
-import { apiUrl } from '../config/api';
+import { apiFetch } from '../config/api';
 import { GirlVideoCallCard, BoyVideoCallCard, MobileAuthCallPreview } from '../components/AuthVideoCallPanels';
 
 const RegistrationPage: React.FC = () => {
@@ -28,7 +28,7 @@ const RegistrationPage: React.FC = () => {
     }
     setLoading(true);
     try {
-      const res = await fetch(apiUrl('/api/auth/register'), {
+      const res = await apiFetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, isCollegeStudent, institutionName })
@@ -56,7 +56,7 @@ const RegistrationPage: React.FC = () => {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(apiUrl('/api/auth/verify-otp'), {
+      const res = await apiFetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp })
@@ -112,11 +112,10 @@ const RegistrationPage: React.FC = () => {
                 <React.Fragment key={item}>
                   <div className="text-center">
                     <div
-                      className={`mx-auto w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                        i === 0 || (step === 'verify' && i === 1)
+                      className={`mx-auto w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${i === 0 || (step === 'verify' && i === 1)
                           ? 'bg-gradient-to-tr from-pink-500 to-purple-600 text-white shadow-md shadow-pink-500/30'
                           : 'bg-white/10 text-slate-500'
-                      }`}
+                        }`}
                     >
                       {i === 0 && step === 'verify' ? <Check size={16} /> : i + 1}
                     </div>
@@ -225,7 +224,7 @@ const RegistrationPage: React.FC = () => {
                       <input
                         value={institutionName}
                         onChange={e => setInstitutionName(e.target.value)}
-                        placeholder="e.g. Parul University"
+                        placeholder="e.g. ABC University"
                         required
                         className="auth-input mt-1.5 !pl-4 !py-2"
                       />

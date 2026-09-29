@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { Logo3D } from "../components/Logo3D";
 import { InfoModal, type InfoModalTab } from "../components/InfoModal";
-import { apiUrl } from "../config/api";
+import { apiFetch } from "../config/api";
 
 const MarqueeTicker: React.FC<{ text: string }> = ({ text }) => {
   const items = Array.from({ length: 6 }, () => text);
@@ -171,7 +171,7 @@ const LandingPage: React.FC = () => {
   useEffect(() => {
     const loadContent = async () => {
       try {
-        const response = await fetch(apiUrl('/api/admin/landing-content'));
+        const response = await apiFetch('/api/admin/landing-content');
         const data = await response.json();
         if (response.ok && data.content) setLiveContent(data.content);
       } catch { /* Default content keeps the landing page resilient if the API is offline. */ }

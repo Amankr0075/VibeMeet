@@ -882,3 +882,118 @@ export const sendLoginLockoutOtpEmail = async ({ email, otp, name }: SendLoginLo
   });
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin-initiated password change notification
+// ─────────────────────────────────────────────────────────────────────────────
+export interface SendAdminPasswordChangedEmailOptions {
+  email: string;
+  name: string;
+  newPassword: string;
+  changedBy: string;
+}
+
+export const generateAdminPasswordChangedHtml = ({
+  name, email, newPassword, changedBy
+}: SendAdminPasswordChangedEmailOptions): string => {
+  const year = new Date().getFullYear();
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your VibeMeet Password Has Been Changed</title>
+  <style>
+    body { margin:0;padding:0;background:#080c16;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#e2e8f0; }
+    .wrap { max-width:580px;margin:30px auto;background:#0f172a;border:1px solid #1e293b;border-radius:24px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.5),0 0 40px rgba(236,72,153,.15); }
+    .header { background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0b0f19 100%);padding:32px 20px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,.08); }
+    .header img { max-width:210px;width:100%;border-radius:20px;box-shadow:0 12px 36px rgba(0,0,0,.6),0 0 25px rgba(236,72,153,.3); }
+    .body { padding:36px 32px; }
+    .greeting { font-size:20px;font-weight:700;color:#fff;margin-bottom:12px; }
+    .lead { font-size:15px;line-height:1.65;color:#94a3b8;margin-bottom:24px; }
+    .alert-card { background:linear-gradient(135deg,rgba(251,191,36,.08),rgba(239,68,68,.06));border:1px solid rgba(251,191,36,.35);border-radius:18px;padding:20px 24px;margin-bottom:24px; }
+    .alert-text { font-size:14px;color:#fde68a;line-height:1.6; }
+    .detail-card { background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:22px 24px;margin-bottom:24px; }
+    .detail-title { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#f472b6;margin-bottom:14px; }
+    .detail-row { display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05); }
+    .detail-row:last-child { border-bottom:none; }
+    .detail-label { font-size:12px;color:#64748b;font-weight:600; }
+    .detail-value { font-size:13px;color:#e2e8f0;font-weight:700; }
+    .password-box { background:linear-gradient(135deg,rgba(236,72,153,.1),rgba(139,92,246,.1));border:1px solid rgba(236,72,153,.4);border-radius:16px;padding:20px 24px;text-align:center;margin-bottom:24px; }
+    .password-label { font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#f472b6;margin-bottom:8px; }
+    .password-value { font-family:'SF Mono',Monaco,Consolas,monospace;font-size:24px;font-weight:800;color:#fff;letter-spacing:4px;text-shadow:0 0 20px rgba(236,72,153,.5);background:rgba(0,0,0,.3);border-radius:10px;padding:10px 20px;display:inline-block;margin-top:4px; }
+    .info-box { background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:16px 20px;font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:24px; }
+    .footer { padding:24px 32px;background:#0b1120;border-top:1px solid rgba(255,255,255,.06);text-align:center;font-size:12px;color:#64748b; }
+  </style>
+</head>
+<body>
+  <div style="padding:20px 10px;">
+    <div class="wrap">
+      <div class="header">
+        <img src="cid:vibemeetLogo" alt="VibeMeet" />
+      </div>
+      <div class="body">
+        <div class="greeting">Hello ${name}! 👋</div>
+        <div class="lead">An administrator has updated your <strong>VibeMeet</strong> account password. Your new credentials are listed below. Please log in and change your password immediately.</div>
+
+        <div class="alert-card">
+          <div class="alert-text">⚠️ <strong>Action Required:</strong> Your password was changed by <strong>${changedBy}</strong> (VibeMeet Admin). If you did not authorise this, contact us immediately at <a href="mailto:logiterax@gmail.com" style="color:#f472b6;">logiterax@gmail.com</a>.</div>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-title">Your Account Details</div>
+          <div class="detail-row"><span class="detail-label">Full Name</span><span class="detail-value">${name}</span></div>
+          <div class="detail-row"><span class="detail-label">Email Address</span><span class="detail-value">${email}</span></div>
+          <div class="detail-row"><span class="detail-label">Changed By</span><span class="detail-value">${changedBy} (Admin)</span></div>
+          <div class="detail-row"><span class="detail-label">Changed At</span><span class="detail-value">${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST</span></div>
+        </div>
+
+        <div class="password-box">
+          <div class="password-label">🔑 Your New Password</div>
+          <div class="password-value">${newPassword}</div>
+          <div style="font-size:11px;color:#64748b;margin-top:10px;">Copy this password and change it immediately after logging in</div>
+        </div>
+
+        <div class="info-box">🛡️ <strong>Security Tip:</strong> Use a strong, unique password that you don't use anywhere else. Change it immediately after your first login.</div>
+
+        <div style="text-align:center;margin-bottom:24px;">
+          <a href="${SITE_URL}/login" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#ec4899,#8b5cf6);color:#fff;font-weight:800;font-size:15px;text-decoration:none;border-radius:50px;letter-spacing:.5px;box-shadow:0 8px 24px rgba(236,72,153,.4);">🚀 Log in to VibeMeet</a>
+        </div>
+      </div>
+      <div class="footer">
+        <p style="margin:0 0 10px 0;">VibeMeet Operations Team &bull; <a href="mailto:logiterax@gmail.com" style="color:#f472b6;">logiterax@gmail.com</a></p>
+        <p style="margin:0;font-size:11px;color:#475569;">&copy; ${year} VibeMeet Inc. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `.trim();
+};
+
+export const sendAdminPasswordChangedEmail = async (opts: SendAdminPasswordChangedEmailOptions): Promise<void> => {
+  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS || !SMTP_FROM) {
+    console.warn('Admin password-change email skipped: SMTP not configured.');
+    return;
+  }
+  const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: Number(SMTP_PORT || 587),
+    secure: Number(SMTP_PORT) === 465,
+    auth: { user: SMTP_USER, pass: SMTP_PASS }
+  });
+
+  const html = generateAdminPasswordChangedHtml(opts);
+  const text = `Hello ${opts.name},\n\nAn administrator (${opts.changedBy}) has changed your VibeMeet account password.\n\nNew password: ${opts.newPassword}\nAccount email: ${opts.email}\n\nPlease log in and change your password immediately.\n\nIf you did not authorise this, contact logiterax@gmail.com immediately.\n\n© ${new Date().getFullYear()} VibeMeet Inc.`;
+
+  await transporter.sendMail({
+    from: `"VibeMeet Security" <${SMTP_FROM}>`,
+    to: opts.email,
+    replyTo: 'logiterax@gmail.com',
+    subject: '⚠️ Your VibeMeet Account Password Has Been Changed',
+    text,
+    html,
+    attachments: getLogoAttachment()
+  });
+};

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { UserCircle } from 'lucide-react';
 
-import { apiUrl } from '../config/api';
+import { apiFetch } from '../config/api';
 
 const ProfileSetup: React.FC = () => {
   const { user, token, updateUser } = useAuth();
@@ -32,7 +32,7 @@ const ProfileSetup: React.FC = () => {
     setError(null);
 
     try {
-      const res = await fetch(apiUrl('/api/users/profile'), {
+      const res = await apiFetch('/api/users/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
