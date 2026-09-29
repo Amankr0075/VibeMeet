@@ -1,9 +1,13 @@
 // API configuration
-// In development, empty API_BASE uses relative paths proxied by Vite dev server (/api -> http://localhost:5000/api)
-// which eliminates CORS, hostname, and IPv4/IPv6 mismatch issues.
-export const API_BASE = import.meta.env.VITE_API_URL !== undefined
+const LIVE_BACKEND_URL = 'https://zodiac-snooper-cornfield.ngrok-free.dev';
+
+// In development, empty API_BASE uses relative paths proxied by Vite dev server (/api -> http://localhost:5000/api).
+// When deployed on Vercel/public host, defaults to the live backend tunnel.
+export const API_BASE = (import.meta.env.VITE_API_URL !== undefined && import.meta.env.VITE_API_URL !== '')
   ? String(import.meta.env.VITE_API_URL).trim().replace(/\/$/, '')
-  : '';
+  : (typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+      ? LIVE_BACKEND_URL
+      : '');
 
 export const apiUrl = (path: string): string => {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
@@ -13,10 +17,29 @@ export const apiUrl = (path: string): string => {
 // Free ngrok tunnels show an HTML interstitial to browser fetch requests unless
 // this header is present. Set it unconditionally so authenticated requests, admin
 // dashboard data fetching, and API calls always reach the real backend.
-export const apiFetch = (path: string, init: RequestInit = {}): Promise<Response> => {
+export const apiFetch = async (path: string, init: RequestInit = {}): Promise<Response> => {
   const headers = new Headers(init.headers);
   headers.set('ngrok-skip-browser-warning', 'true');
-  return fetch(apiUrl(path), { ...init, headers });
+  const primaryUrl = apiUrl(path);
+
+  try {
+    const res = await fetch(primaryUrl, { ...init, headers });
+    // If Vercel proxy returned 502/504 on non-localhost, try direct ngrok as fallback
+    if (!res.ok && (res.status === 502 || res.status === 504) && !primaryUrl.startsWith(LIVE_BACKEND_URL)) {
+      const fallbackUrl = `${LIVE_BACKEND_URL}${path.startsWith('/') ? path : `/${path}`}`;
+      return await fetch(fallbackUrl, { ...init, headers });
+    }
+    return res;
+  } catch (err) {
+    // If primary failed with "Failed to fetch" (e.g. proxy timeout/network blip), fallback
+    if (typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      const fallbackUrl = primaryUrl.startsWith(LIVE_BACKEND_URL)
+        ? (path.startsWith('/') ? path : `/${path}`)
+        : `${LIVE_BACKEND_URL}${path.startsWith('/') ? path : `/${path}`}`;
+      return await fetch(fallbackUrl, { ...init, headers });
+    }
+    throw err;
+  }
 };
 
 export const getSocketUrl = (): string => {
@@ -37,7 +60,7 @@ export const getSocketUrl = (): string => {
 
   // When deployed to production (e.g. Vercel), connect socket directly to the live backend tunnel
   if (typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return 'https://zodiac-snooper-cornfield.ngrok-free.dev';
+    return LIVE_BACKEND_URL;
   }
 
   // If in browser local dev, use current origin (proxied by Vite) or fallback to localhost:5000
