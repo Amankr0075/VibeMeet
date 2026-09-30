@@ -4,12 +4,14 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import ProfileSetup from './pages/ProfileSetup';
 import MatchPage from './pages/MatchPage';
+import CallPage from './pages/CallPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminLoginPage from './pages/AdminLoginPage';
 import RegistrationPage from './pages/RegistrationPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import { useAuth } from './context/AuthContext';
+import { CallProvider } from './context/CallContext';
 
 // Protected Route Wrapper for Users
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -50,6 +52,13 @@ function App() {
         <Route path="/match" element={
           <ProtectedRoute>
             <MatchPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/call/:roomId" element={
+          <ProtectedRoute>
+            <CallProvider>
+              <CallPage />
+            </CallProvider>
           </ProtectedRoute>
         } />
         <Route path="/admin" element={

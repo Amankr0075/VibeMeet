@@ -50,4 +50,16 @@
 6. End call and confirm both users return to the match queue.
 
 ---
-**Next Steps**: Await your confirmation on UI preferences and open questions before creating the new files and updating existing ones.
+**Status — All items implemented ✅**
+
+| Item | File | Status |
+|------|------|--------|
+| CallPage | `frontend/src/pages/CallPage.tsx` | ✅ Created |
+| CallContext | `frontend/src/context/CallContext.tsx` | ✅ Created |
+| call.css | `frontend/src/styles/call.css` | ✅ Created |
+| Frontend moderationService | `frontend/src/ai/moderationService.ts` | ✅ Created |
+| App.tsx route `/call/:roomId` | `frontend/src/App.tsx` | ✅ Updated |
+| Backend socketHandler | `backend/src/sockets/socketHandler.ts` | ✅ Already complete |
+| Backend moderationService | `backend/src/ai/moderationService.ts` | ✅ Already complete |
+
+Build passes with 0 TypeScript errors.

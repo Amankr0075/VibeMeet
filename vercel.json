@@ -1,4 +1,12 @@
 {
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "ngrok-skip-browser-warning", "value": "true" }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",

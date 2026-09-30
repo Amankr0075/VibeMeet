@@ -1,13 +1,24 @@
 // API configuration
+// The live backend tunnel URL — used as fallback when env var is not set
 const LIVE_BACKEND_URL = 'https://zodiac-snooper-cornfield.ngrok-free.dev';
 
-// In development, empty API_BASE uses relative paths proxied by Vite dev server (/api -> http://localhost:5000/api).
-// When deployed on Vercel/public host, defaults to the live backend tunnel.
-export const API_BASE = (import.meta.env.VITE_API_URL !== undefined && import.meta.env.VITE_API_URL !== '')
-  ? String(import.meta.env.VITE_API_URL).trim().replace(/\/$/, '')
-  : (typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-      ? LIVE_BACKEND_URL
-      : '');
+// In development (localhost), API_BASE is empty — Vite dev server proxies /api -> localhost:5000
+// In production (Vercel), VITE_API_URL is set in .env.production -> ngrok URL
+// If VITE_API_URL is not set in production, fallback to LIVE_BACKEND_URL for non-localhost hosts
+export const API_BASE = (() => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl !== undefined && envUrl !== '') {
+    return String(envUrl).trim().replace(/\/$/, '');
+  }
+  // On Vercel/deployed, use the live backend URL directly
+  if (typeof window !== 'undefined' && window.location &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1') {
+    return LIVE_BACKEND_URL;
+  }
+  // Local dev: empty string means use relative /api paths (proxied by Vite)
+  return '';
+})();
 
 export const apiUrl = (path: string): string => {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
@@ -15,55 +26,54 @@ export const apiUrl = (path: string): string => {
 };
 
 // Free ngrok tunnels show an HTML interstitial to browser fetch requests unless
-// this header is present. Set it unconditionally so authenticated requests, admin
-// dashboard data fetching, and API calls always reach the real backend.
+// this header is present. Always include it so API calls reach the real backend.
 export const apiFetch = async (path: string, init: RequestInit = {}): Promise<Response> => {
   const headers = new Headers(init.headers);
   headers.set('ngrok-skip-browser-warning', 'true');
-  const primaryUrl = apiUrl(path);
+
+  const url = apiUrl(path);
 
   try {
-    const res = await fetch(primaryUrl, { ...init, headers });
-    // If Vercel proxy returned 502/504 on non-localhost, try direct ngrok as fallback
-    if (!res.ok && (res.status === 502 || res.status === 504) && !primaryUrl.startsWith(LIVE_BACKEND_URL)) {
-      const fallbackUrl = `${LIVE_BACKEND_URL}${path.startsWith('/') ? path : `/${path}`}`;
-      return await fetch(fallbackUrl, { ...init, headers });
+    const res = await fetch(url, { ...init, headers });
+    // If Vercel proxy returned a gateway error, try direct ngrok as fallback
+    if (!res.ok && (res.status === 502 || res.status === 504) && !url.startsWith(LIVE_BACKEND_URL)) {
+      const fallback = `${LIVE_BACKEND_URL}${path.startsWith('/') ? path : `/${path}`}`;
+      return await fetch(fallback, { ...init, headers });
     }
     return res;
-  } catch (err) {
-    // If primary failed with "Failed to fetch" (e.g. proxy timeout/network blip), fallback
-    if (typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      const fallbackUrl = primaryUrl.startsWith(LIVE_BACKEND_URL)
-        ? (path.startsWith('/') ? path : `/${path}`)
-        : `${LIVE_BACKEND_URL}${path.startsWith('/') ? path : `/${path}`}`;
-      return await fetch(fallbackUrl, { ...init, headers });
+  } catch {
+    // Network error — try direct ngrok if we weren't already hitting it
+    if (!url.startsWith(LIVE_BACKEND_URL)) {
+      const fallback = `${LIVE_BACKEND_URL}${path.startsWith('/') ? path : `/${path}`}`;
+      return await fetch(fallback, { ...init, headers });
     }
-    throw err;
+    throw new Error('Unable to reach the server. Please check your connection.');
   }
 };
 
 export const getSocketUrl = (): string => {
-  if (import.meta.env.VITE_SOCKET_URL) {
-    return String(import.meta.env.VITE_SOCKET_URL).trim().replace(/\/$/, '');
+  const envSocketUrl = import.meta.env.VITE_SOCKET_URL;
+  if (envSocketUrl) {
+    return String(envSocketUrl).trim().replace(/\/$/, '');
   }
 
-  // Deployed Vercel clients cannot use localhost:5000: that address points to
-  // the visitor's own device. When an API host is configured, use that same
-  // public host for Socket.IO unless a dedicated socket URL is supplied.
+  // If API_BASE is set, derive socket URL from it
   if (API_BASE) {
     try {
       return new URL(API_BASE, window.location.origin).origin;
     } catch {
-      // Fall through to the local development default below.
+      // fall through
     }
   }
 
-  // When deployed to production (e.g. Vercel), connect socket directly to the live backend tunnel
-  if (typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+  // Deployed on non-localhost: connect socket directly to live backend
+  if (typeof window !== 'undefined' && window.location &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1') {
     return LIVE_BACKEND_URL;
   }
 
-  // If in browser local dev, use current origin (proxied by Vite) or fallback to localhost:5000
+  // Local dev: use current origin (proxied by Vite)
   if (typeof window !== 'undefined' && window.location && window.location.origin) {
     return window.location.origin;
   }
