@@ -129,6 +129,20 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/notifications', notificationRoutes);
 
+// Catch-all 404 for unhandled /api routes (ensures JSON response, never HTML)
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: `API route not found: ${req.method} ${req.originalUrl}` });
+});
+
+// Global JSON Error Handler — prevents returning HTML error pages to frontend
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Unhandled server error:', err);
+  const status = typeof err.status === 'number' ? err.status : 500;
+  res.status(status).json({
+    error: err.message || 'An unexpected server error occurred.'
+  });
+});
+
 // Socket.io connection
 setupSockets(io);
 

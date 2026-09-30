@@ -3,7 +3,7 @@ import {
   KeyRound, Mail, LockKeyhole, Eye, EyeOff, X, 
   ArrowLeft, CheckCircle2, AlertCircle, RefreshCw, Sparkles 
 } from 'lucide-react';
-import { apiFetch } from '../config/api';
+import { apiFetch, safeJson } from '../config/api';
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -64,7 +64,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         body: JSON.stringify({ email: email.trim().toLowerCase() })
       });
 
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) {
         throw new Error(data.error || 'Failed to send verification code.');
       }
@@ -90,7 +90,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         body: JSON.stringify({ email: email.trim().toLowerCase() })
       });
 
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) {
         throw new Error(data.error || 'Failed to resend code.');
       }
@@ -136,7 +136,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         })
       });
 
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) {
         throw new Error(data.error || 'Failed to reset password.');
       }

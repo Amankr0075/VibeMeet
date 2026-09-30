@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Check, Home, KeyRound, LockKeyhole, Mail, ShieldCheck, UserRound, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Logo3D } from '../components/Logo3D';
-import { apiFetch } from '../config/api';
+import { apiFetch, safeJson } from '../config/api';
 import { GirlVideoCallCard, BoyVideoCallCard, MobileAuthCallPreview } from '../components/AuthVideoCallPanels';
 
 const RegistrationPage: React.FC = () => {
@@ -33,7 +33,7 @@ const RegistrationPage: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, isCollegeStudent, institutionName })
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || 'Unable to send the verification code.');
 
       // Demo accounts (@demo.com) are created instantly — skip OTP step
@@ -61,7 +61,7 @@ const RegistrationPage: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp })
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || 'Unable to verify the code.');
       login(data.token, data.user);
       navigate('/setup');
@@ -113,8 +113,8 @@ const RegistrationPage: React.FC = () => {
                   <div className="text-center">
                     <div
                       className={`mx-auto w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${i === 0 || (step === 'verify' && i === 1)
-                          ? 'bg-gradient-to-tr from-pink-500 to-purple-600 text-white shadow-md shadow-pink-500/30'
-                          : 'bg-white/10 text-slate-500'
+                        ? 'bg-gradient-to-tr from-pink-500 to-purple-600 text-white shadow-md shadow-pink-500/30'
+                        : 'bg-white/10 text-slate-500'
                         }`}
                     >
                       {i === 0 && step === 'verify' ? <Check size={16} /> : i + 1}

@@ -4,7 +4,7 @@ import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, CheckCircle2, Home, Sparkl
 import { useAuth } from '../context/AuthContext';
 import { Logo3D } from '../components/Logo3D';
 import { ForgotPasswordModal } from '../components/ForgotPasswordModal';
-import { apiFetch } from '../config/api';
+import { apiFetch, safeJson } from '../config/api';
 import { GirlVideoCallCard, BoyVideoCallCard, MobileAuthCallPreview } from '../components/AuthVideoCallPanels';
 
 const LoginPage: React.FC = () => {
@@ -37,7 +37,7 @@ const LoginPage: React.FC = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, otp })
         });
-        data = await res.json();
+        data = await safeJson(res);
       } else {
         // Normal Login
         res = await apiFetch('/api/auth/login', {
@@ -45,7 +45,7 @@ const LoginPage: React.FC = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
-        data = await res.json();
+        data = await safeJson(res);
 
         if (res.status === 403 && data.requireOtp) {
           setIsOtpMode(true);
