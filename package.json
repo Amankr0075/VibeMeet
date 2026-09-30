@@ -8,6 +8,8 @@
   ],
   "scripts": {
     "dev": "npx concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\"",
+    "tunnel": "ngrok http 5000 --url=zodiac-snooper-cornfield.ngrok-free.dev",
+    "server": "npx concurrently -k \"npm run dev --prefix backend\" \"ngrok http 5000 --url=zodiac-snooper-cornfield.ngrok-free.dev\"",
     "install-all": "npm install && npm install --prefix frontend && npm install --prefix backend"
   },
   "devDependencies": {

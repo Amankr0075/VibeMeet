@@ -17,6 +17,9 @@ if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || process
 
 const app = express();
 
+// Trust reverse proxy (ngrok / Vercel) so express-rate-limit and req.ip work properly
+app.set('trust proxy', 1);
+
 // Apply security headers
 app.use(helmet({
   crossOriginResourcePolicy: false, // Required for serving images from /uploads
