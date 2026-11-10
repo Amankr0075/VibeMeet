@@ -41,10 +41,10 @@ const iceServers: RTCIceServer[] = [
   { urls: 'stun:stun1.l.google.com:19302' },
   ...(import.meta.env.VITE_TURN_URL
     ? [{
-        urls: import.meta.env.VITE_TURN_URL as string,
-        username: import.meta.env.VITE_TURN_USERNAME as string,
-        credential: import.meta.env.VITE_TURN_CREDENTIAL as string,
-      }]
+      urls: import.meta.env.VITE_TURN_URL as string,
+      username: import.meta.env.VITE_TURN_USERNAME as string,
+      credential: import.meta.env.VITE_TURN_CREDENTIAL as string,
+    }]
     : [fallbackTurnServer]),
 ];
 
@@ -131,7 +131,7 @@ const CallPage: React.FC = () => {
       setLocalStream(s);
       if (myVideoRef.current) {
         myVideoRef.current.srcObject = s;
-        myVideoRef.current.play().catch(() => {});
+        myVideoRef.current.play().catch(() => { });
       }
       return s;
     } catch (err: any) {
@@ -176,6 +176,7 @@ const CallPage: React.FC = () => {
 
     const socket = io(getSocketUrl(), {
       auth: { token },
+      query: { 'ngrok-skip-browser-warning': 'true' },
       extraHeaders: { 'ngrok-skip-browser-warning': 'true' },
       transports: ['websocket', 'polling'],
     });
@@ -213,7 +214,18 @@ const CallPage: React.FC = () => {
         setStatus('IN_CALL');
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = remote;
-          remoteVideoRef.current.play().catch(() => {});
+          remoteVideoRef.current.play().catch(() => { });
+        }
+      });
+
+      peer.on('track', (_track: MediaStreamTrack, remote: MediaStream) => {
+        if (remote) {
+          setRemoteStream(remote);
+          setStatus('IN_CALL');
+          if (remoteVideoRef.current && remoteVideoRef.current.srcObject !== remote) {
+            remoteVideoRef.current.srcObject = remote;
+            remoteVideoRef.current.play().catch(() => { });
+          }
         }
       });
 
@@ -252,7 +264,18 @@ const CallPage: React.FC = () => {
         setStatus('IN_CALL');
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = remote;
-          remoteVideoRef.current.play().catch(() => {});
+          remoteVideoRef.current.play().catch(() => { });
+        }
+      });
+
+      peer.on('track', (_track: MediaStreamTrack, remote: MediaStream) => {
+        if (remote) {
+          setRemoteStream(remote);
+          setStatus('IN_CALL');
+          if (remoteVideoRef.current && remoteVideoRef.current.srcObject !== remote) {
+            remoteVideoRef.current.srcObject = remote;
+            remoteVideoRef.current.play().catch(() => { });
+          }
         }
       });
 
@@ -316,7 +339,7 @@ const CallPage: React.FC = () => {
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
-      remoteVideoRef.current.play().catch(() => {});
+      remoteVideoRef.current.play().catch(() => { });
     }
   }, [remoteStream]);
 

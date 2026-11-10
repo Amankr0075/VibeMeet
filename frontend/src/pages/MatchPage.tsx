@@ -144,6 +144,7 @@ const MatchPage: React.FC = () => {
     const socketUrl = getSocketUrl();
     const newSocket = io(socketUrl, {
       auth: { token },
+      query: { 'ngrok-skip-browser-warning': 'true' },
       extraHeaders: { 'ngrok-skip-browser-warning': 'true' },
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -309,6 +310,17 @@ const MatchPage: React.FC = () => {
         }
       });
 
+      newPeer.on('track', (_track: MediaStreamTrack, rStream: MediaStream) => {
+        if (rStream) {
+          setRemoteStream(rStream);
+          setStatus('IN_CALL');
+          if (userVideo.current && userVideo.current.srcObject !== rStream) {
+            userVideo.current.srcObject = rStream;
+            userVideo.current.play().catch(() => { });
+          }
+        }
+      });
+
       newPeer.on('error', (err) => {
         console.error('Peer error (initiator):', err);
         endCallCleanup();
@@ -362,6 +374,17 @@ const MatchPage: React.FC = () => {
         if (userVideo.current) {
           userVideo.current.srcObject = rStream;
           userVideo.current.play().catch(() => { });
+        }
+      });
+
+      newPeer.on('track', (_track: MediaStreamTrack, rStream: MediaStream) => {
+        if (rStream) {
+          setRemoteStream(rStream);
+          setStatus('IN_CALL');
+          if (userVideo.current && userVideo.current.srcObject !== rStream) {
+            userVideo.current.srcObject = rStream;
+            userVideo.current.play().catch(() => { });
+          }
         }
       });
 
