@@ -11,6 +11,7 @@ import {
 import { Logo3D } from '../components/Logo3D';
 import { NotificationBell } from '../components/NotificationBell';
 import { apiFetch, getSocketUrl } from '../config/api';
+import { cacheOnlineCount, getCachedOnlineCount } from '../pwa/pwaCache';
 
 const AVATAR_PRESETS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
@@ -114,7 +115,7 @@ const MatchPage: React.FC = () => {
   // Keep a ref in sync with roomId so socket callbacks can read the latest value
   useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
   const [mediaError, setMediaError] = useState<string | null>(null);
-  const [onlineCount, setOnlineCount] = useState<number | null>(null);
+  const [onlineCount, setOnlineCount] = useState<number | null>(getCachedOnlineCount());
 
 
   // Live Chat
@@ -152,7 +153,10 @@ const MatchPage: React.FC = () => {
     });
     setSocket(newSocket);
 
-    newSocket.on('online-count', (count: number) => setOnlineCount(count));
+    newSocket.on('online-count', (count: number) => {
+      setOnlineCount(count);
+      cacheOnlineCount(count);
+    });
     newSocket.on('connect_error', () => {
       setMediaError('Unable to connect to the matching service. Check that the server is running and try again.');
     });

@@ -2,13 +2,14 @@ import React, { useRef, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { motion, useInView } from "framer-motion";
-import { 
-  Video, Heart, Shield, Sparkles, Zap, Star, Users, ChevronRight, ArrowRight, 
-  BadgeCheck, PhoneCall, Radio, Megaphone, Share2, Copy, Check, X, Menu
+import {
+  Video, Heart, Shield, Sparkles, Zap, Star, Users, ChevronRight, ArrowRight,
+  BadgeCheck, PhoneCall, Radio, Megaphone, Share2, Copy, Check, X, Menu, Download
 } from "lucide-react";
 import { Logo3D } from "../components/Logo3D";
 import { InfoModal, type InfoModalTab } from "../components/InfoModal";
 import { apiFetch } from "../config/api";
+import { usePwaInstall } from "../pwa/usePwaInstall";
 
 const MarqueeTicker: React.FC<{ text: string }> = ({ text }) => {
   const items = Array.from({ length: 6 }, () => text);
@@ -123,6 +124,7 @@ const CampaignCard: React.FC<{ post: LandingPost; label: string; color: 'pink' |
 
 const LandingPage: React.FC = () => {
   const { user } = useAuth();
+  const { isIos, isStandalone, triggerInstall } = usePwaInstall();
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [activeInfoTab, setActiveInfoTab] = useState<InfoModalTab>('about');
   const [showShare, setShowShare] = useState(false);
@@ -253,11 +255,29 @@ const LandingPage: React.FC = () => {
           <button onClick={() => openInfoModal('contact')} className="hover:text-pink-400 transition-colors">Contact</button>
         </div>
         <div className="flex items-center gap-3">
+          {/* Install App Button */}
+          {!isStandalone && (
+            <button
+              onClick={() => {
+                if (isIos) {
+                  alert('To install on iPhone/iPad:\n1. Tap the Share button in Safari (box with arrow pointing up)\n2. Scroll down and tap "Add to Home Screen" 📲');
+                } else {
+                  triggerInstall();
+                }
+              }}
+              className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold border border-pink-500/40 bg-pink-500/10 text-pink-300 hover:bg-pink-500/20 hover:border-pink-400 transition-all duration-300 shadow-[0_0_15px_rgba(236,72,153,0.2)]"
+              title="Install VibeMeet App"
+            >
+              <Download className="w-3.5 h-3.5 text-pink-400" />
+              <span>Install App</span>
+            </button>
+          )}
+
           {/* Share Button */}
           <button
             onClick={async () => {
               if (navigator.share) {
-                try { await navigator.share({ title: 'VibeMeet', text: shareText, url: shareUrl }); return; } catch {}
+                try { await navigator.share({ title: 'VibeMeet', text: shareText, url: shareUrl }); return; } catch { }
               }
               setShowShare(true);
             }}
@@ -285,7 +305,7 @@ const LandingPage: React.FC = () => {
           )}
 
           {/* Mobile Menu Toggle */}
-          <button 
+          <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="lg:hidden p-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
           >
@@ -296,9 +316,9 @@ const LandingPage: React.FC = () => {
 
       {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }} 
-          animate={{ opacity: 1, y: 0 }} 
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
           className="lg:hidden absolute top-20 left-4 right-4 z-40 bg-[#0f172a]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 flex flex-col gap-4"
         >
           <button onClick={() => { scrollTo('how-it-works'); setIsMobileMenuOpen(false); }} className="text-left px-4 py-2 hover:bg-white/5 rounded-lg text-slate-200">How it works</button>
@@ -308,6 +328,21 @@ const LandingPage: React.FC = () => {
           <button onClick={() => { openInfoModal('terms'); setIsMobileMenuOpen(false); }} className="text-left px-4 py-2 hover:bg-white/5 rounded-lg text-slate-200">Terms</button>
           <button onClick={() => { openInfoModal('privacy'); setIsMobileMenuOpen(false); }} className="text-left px-4 py-2 hover:bg-white/5 rounded-lg text-slate-200">Privacy</button>
           <button onClick={() => { openInfoModal('contact'); setIsMobileMenuOpen(false); }} className="text-left px-4 py-2 hover:bg-white/5 rounded-lg text-slate-200">Contact</button>
+          {!isStandalone && (
+            <button
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                if (isIos) {
+                  alert('To install on iPhone/iPad:\n1. Tap the Share button in Safari (box with arrow pointing up)\n2. Scroll down and tap "Add to Home Screen" 📲');
+                } else {
+                  triggerInstall();
+                }
+              }}
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-full text-xs font-bold bg-gradient-to-r from-pink-500/20 to-purple-500/20 border border-pink-500/40 text-pink-300"
+            >
+              <Download className="w-4 h-4" /> Install VibeMeet App
+            </button>
+          )}
         </motion.div>
       )}
 
@@ -358,7 +393,7 @@ const LandingPage: React.FC = () => {
             How it works
           </button>
         </motion.div>
-        
+
         <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-slate-400 -mt-14 mb-20">
           <span className="inline-flex items-center gap-1.5"><BadgeCheck size={15} className="text-emerald-400" /> Email-verified community</span>
           <span className="inline-flex items-center gap-1.5"><Shield size={15} className="text-blue-400" /> Safety tools in every call</span>

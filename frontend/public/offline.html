@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VibeMeet — Offline</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #0a0f1e;
+      color: white;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      text-align: center;
+      padding: 2rem;
+    }
+    .logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 24px;
+      margin-bottom: 2rem;
+      box-shadow: 0 0 40px rgba(236,72,153,0.4);
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #f472b6, #a855f7, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1rem;
+    }
+    p {
+      color: #94a3b8;
+      font-size: 1rem;
+      max-width: 400px;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+    button {
+      padding: 0.85rem 2.5rem;
+      border-radius: 9999px;
+      border: none;
+      background: linear-gradient(135deg, #ec4899, #a855f7);
+      color: white;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    button:hover { transform: scale(1.05); }
+    .wifi-icon {
+      font-size: 4rem;
+      margin-bottom: 1.5rem;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <img src="/icons/icon-192.png" alt="VibeMeet" class="logo" onerror="this.style.display='none'" />
+  <div class="wifi-icon">📡</div>
+  <h1>You're offline</h1>
+  <p>VibeMeet needs an internet connection for live video calls and matching. Please reconnect and try again.</p>
+  <button onclick="window.location.reload()">Try Again</button>
+</body>
+</html>
+

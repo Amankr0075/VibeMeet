@@ -12,6 +12,7 @@ import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import { useAuth } from './context/AuthContext';
 import { CallProvider } from './context/CallContext';
+import { InstallBanner } from './components/InstallBanner';
 
 // Protected Route Wrapper for Users
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -36,6 +37,7 @@ const AdminProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 function App() {
   return (
     <BrowserRouter>
+      <InstallBanner />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
